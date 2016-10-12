@@ -1,0 +1,3 @@
+#!/bin/sh
+
+awk '{tag=$1; $1=""; print tag " |" $0}' "$@"

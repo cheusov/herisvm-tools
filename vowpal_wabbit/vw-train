@@ -1,0 +1,41 @@
+#!/bin/sh
+
+usage (){
+    cat 1>&2 <<EOF
+vw-train - wrapper over vw(1)
+
+usage: vw-train [OPTIONS] training_set_file model_file
+OPTIONS are passed directly to vw(1)
+EOF
+}
+
+if test "_-h" = "_$1"; then
+    usage
+    exit 0
+fi
+
+if test $# -lt 2; then
+    usage
+    exit 1
+fi
+
+split_args (){
+    while test $# -ne 2; do
+	printf '%s ' "$1"
+	shift
+    done
+    printf '\n'
+    printf '%s\n' "$1"
+    printf '%s\n' "$2"
+}
+
+split_args "$@" | {
+    read args
+    read training_set
+    read model
+
+    tmpin="$training_set.vwtmp"
+    awk '{tag=$1; $1 = ""; print tag, "|" $0}' "$training_set" > "$tmpin"
+
+    eval "vw $tmpin --quiet -f $model $args"
+}

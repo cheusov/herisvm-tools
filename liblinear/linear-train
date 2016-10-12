@@ -1,0 +1,5 @@
+#!/bin/sh
+
+: ${LIBLINEAR_TRAIN:=liblinear-train}
+
+liblinear-train "$@"

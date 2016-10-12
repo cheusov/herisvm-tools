@@ -1,0 +1,39 @@
+#!/bin/sh
+
+usage (){
+    cat 1>&2 <<EOF
+class-predict - wrapper over classias-tag(1)
+
+usage: class-train [OPTIONS] testing_set_file model_file output_file
+OPTIONS are passed directly to classias-tag(1)
+EOF
+}
+
+if test "_-h" = "_$1"; then
+    usage
+    exit 0
+fi
+
+if test $# -lt 3; then
+    usage
+    exit 1
+fi
+
+split_args (){
+    while test $# -ne 3; do
+	printf '%s ' "$1"
+	shift
+    done
+    printf '\n'
+    printf '%s\n' "$1"
+    printf '%s\n' "$2"
+    printf '%s\n' "$3"
+}
+
+split_args "$@" | {
+    read args
+    read input
+    read model
+    read output
+    eval "classias-tag -m $model $args > $output < $input"
+}

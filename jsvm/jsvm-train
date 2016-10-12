@@ -1,0 +1,4 @@
+#!/bin/sh
+
+: ${LIBSVM_JAR:=/home/cheusov/local/weka/libsvm.jar}
+java -cp "$LIBSVM_JAR" svm_train "$@"

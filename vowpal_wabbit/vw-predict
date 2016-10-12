@@ -1,0 +1,44 @@
+#!/bin/sh
+
+usage (){
+    cat 1>&2 <<EOF
+vw-predict - wrapper over vm(1) for predicting
+
+usage: vw-predict [OPTIONS] testing_set_file model_file output_file
+OPTIONS are passed directly to vm(1)
+EOF
+}
+
+if test "_-h" = "_$1"; then
+    usage
+    exit 0
+fi
+
+if test $# -lt 3; then
+    usage
+    exit 1
+fi
+
+split_args (){
+    while test $# -ne 3; do
+	printf '%s ' "$1"
+	shift
+    done
+    printf '\n'
+    printf '%s\n' "$1"
+    printf '%s\n' "$2"
+    printf '%s\n' "$3"
+}
+
+split_args "$@" | {
+    read args
+    read input
+    read model
+    read output
+
+    tmpin="$input.vwtmp"
+    awk '{tag=$1; $1 = ""; print tag, "|" $0}' "$input" > "$tmpin"
+    
+    eval "vw --quiet $args -t $tmpin -i $model -p /dev/stdout" |
+	awk '{print int($1)}' > "$output"
+}

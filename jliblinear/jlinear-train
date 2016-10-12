@@ -1,0 +1,4 @@
+#!/bin/sh
+
+: ${LIBLINEAR_JAR:=/home/cheusov/local/weka/liblinear.jar}
+java -cp "$LIBLINEAR_JAR" de.bwaldvogel.liblinear.Train "$@"

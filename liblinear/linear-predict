@@ -1,0 +1,54 @@
+#!/bin/sh
+
+: ${LIBLINEAR_PREDICT:=liblinear-predict}
+
+while getopts b:q f; do
+    case "$f" in
+	'?')
+	    ${LIBLINEAR_PREDICT}
+	    exit 1;;
+	b)
+	    with_probs=1
+	    opts="$opts -b $OPTARG";;
+	q)
+	    opts="$opts -q";;
+    esac
+done
+shift `expr $OPTIND - 1`
+
+postprocess (){
+    # convert liblinear-predict's format to what we really need
+    awk '
+	NR == 1 {
+	    if ($1 != "labels")
+		exit 1
+	    for (i=2; i <= NF; ++i){
+		label2idx [$i] = i-1
+	    }
+	    next
+	}
+	{
+	    print $1, $(label2idx[$1]+1)
+	}' "$@"
+}
+
+get_3rd_arg (){
+    shift
+    shift
+    printf '%s\n' "$1"
+}
+
+output_fn=`get_3rd_arg "$@"`
+fifo_fn="$output_fn".pipe
+
+trap "rm -f $fifo_fn" EXIT
+
+rm -f "$fifo_fn"
+mkfifo "$fifo_fn"
+
+if test -n "$with_probs"; then
+    postprocess < "$fifo_fn" > "$output_fn" &
+    $LIBLINEAR_PREDICT $opts "$1" "$2" "$fifo_fn"
+else
+    $LIBLINEAR_PREDICT $opts "$@"
+fi

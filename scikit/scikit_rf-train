@@ -34,18 +34,85 @@ def usage():
     print '''scikit-train builds the model using sklearn.ensemble.RandomForestClassifier
 usage: scikit_rf-train [OPTIONS] <dataset> <model>
 OPTIONS:
+   Most options below directly correcspond to the arguments of
+   sklearn.ensemble.RandomForestClassifier constructor. So, for
+   detailed information see scikit learn's documentation.
+
+   So, for detailed information
    -h   --help                     display this screen
         --estimators <num>         the number of estimator (default: 10)
-        --random_seed <seed>       random seed (default: None)
+        --criterion <criterion>    function to measure the quality of a split
+                                   (default: gini)
+        --max_features <features>  the number of features to consider
+                                   when looking for the best split
+        --max_depth <depth>        the maximum depth of the tree
+        --min_samples_split <num>  the minimum number of samples required
+                                   to split an internal node
+        --min_samples_leaf <num>   the minimum number of samples required
+                                   to split an internal node
+        --max_leaf_nodes <num>     grow trees with max_leaf_nodes in
+                                   best-first fashion. Best nodes are defined
+                                   as relative reduction in impurity.
+                                   If None then unlimited number of leaf nodes
+                                   (default: None)
+        --min_impurity_split <t>   Threshold for early stopping in tree growth.
+                                   A node will split if its impurity is above
+                                   the threshold, otherwise it is a leaf
+                                   (default: 1e-7)
+        --bootstrap <flag>         Whether bootstrap samples are used
+                                   when building trees (default: True)
+        --oob_score <flag>         Whether to use out-of-bag samples to
+                                   estimate the generalization accuracy
+                                   (default: False)
+        --jobs <num>             The number of jobs to run in parallel
+                                   for both fit and predict. If -1, then the
+                                   number of jobs is set to the number
+                                   of cores (default: 1)
+        --random_state <seed>      random seed (default: None)
+        --verbose <num>            controls the verbosity of the tree building
+                                   process (default: 0)
+        --warm_start <flag>        When set to True, reuse the solution of
+                                   the previous call to fit and add more
+                                   estimators to the ensemble, otherwise, just
+                                   fit a whole new forest (default: False)
+        --class_weight <weights>   ignored (default: None)
 '''
+
+def coerce(x):
+    try:
+        return int(x)
+    except:
+        return float(x)
+
+def str2bool(v):
+  return v.lower() in ("yes", "true", "y", "t", "1")
 
 # defaults
 estimators = 10
-random_seed = None
+criterion='gini'
+max_features='auto'
+max_depth=None
+min_samples_split=2
+min_samples_leaf=1
+min_weight_fraction_leaf=0
+max_leaf_nodes=None
+min_impurity_split=1e-7
+bootstrap=True
+oob_score=False
+jobs=1
+random_state = None
+verbose=0
+warm_start=False
+class_weight=None
 
 #
 opts,args = getopt.getopt(sys.argv[1:], 'h',
-                          ['help', 'estimators=', 'random_seed=']
+                          ['help', 'estimators=', "criterion=",
+                           'max_features=', 'max_depth=', 'min_samples_split=',
+                           'min_samples_leaf=', 'min_weight_fraction_leaf=',
+                           'max_leaf_nodes=', 'min_impurity_split=',
+                           'bootstrap=', 'oob_score=', 'jobs=', 'random_state=',
+                           'verbose=', 'warm_start=', 'class_weight=']
 )
 
 for o,a in opts:
@@ -54,8 +121,50 @@ for o,a in opts:
         sys.exit()
     if o in ("--estimators", ):
         estimators = int(a)
-    if o in ("--random_seed", ):
-        random_seed = int(a)
+    if o in ("--criterion", ):
+        criterion = a
+    if o in ("--max_features", ):
+        max_features = a
+        if a in ('auto', 'sqrt', 'log2'):
+            pass
+        elif a == 'None':
+            max_features = None
+        else:
+            max_features = coerce(a)
+    if o in ("--max_depth", ):
+        max_depth = a
+        if a == 'None':
+            max_depth = None
+        else:
+            max_depth = int(a)
+    if o in ("--min_samples_split", ):
+        min_samples_split = coerce(a)
+    if o in ("--min_samples_leaf", ):
+        min_samples_leaf = coerce(a)
+    if o in ("--min_weight_fraction_leaf", ):
+        min_weight_fraction_leaf = float(a)
+    if o in ("--max_leaf_nodes", ):
+        if a == 'None':
+            max_leaf_nodes = None
+        else:
+            max_leaf_nodes = int(a)
+    if o in ("--min_impurity_split", ):
+        min_impurity_split = float(a)
+    if o in ("--bootstrap", ):
+        bootstrap = str2bool(a)
+    if o in ("--oob_score", ):
+        oob_score = str2bool(a)
+    if o in ("--jobs", ):
+        jobs = int(a)
+    if o in ("--random_state", ):
+        if a == 'None':
+            random_state = None
+        else:
+            random_state = int(a)
+    if o in ("--verbose", ):
+        verbose = int(a)
+    if o in ("--warm_start", ):
+        warm_start = str2bool(a)
 
 X_train, y_train = load_svmlight_file(args[0])
 
@@ -64,8 +173,13 @@ if 'HERISVM_FC' in os.environ:
     X_train = resize_csr_matrix(X_train, fc)
 
 clf = ensemble.RandomForestClassifier(
-    n_estimators=estimators, max_features=None, max_depth=18,
-    random_state=random_seed)
+    n_estimators=estimators, criterion=criterion, max_features=max_features,
+    max_depth=max_depth, min_samples_split=min_samples_split,
+    min_samples_leaf=min_samples_leaf,
+    min_weight_fraction_leaf=min_weight_fraction_leaf,
+    max_leaf_nodes=max_leaf_nodes, #min_impurity_split=min_impurity_split,
+    bootstrap=bootstrap, oob_score=oob_score, n_jobs=jobs, random_state=random_state,
+    verbose=verbose, warm_start=warm_start, class_weight=class_weight)
 clf.fit(X_train, y_train)
 with open(args[1], 'wb') as f:
     pickle.dump(clf, f)

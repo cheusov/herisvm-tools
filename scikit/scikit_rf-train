@@ -34,48 +34,48 @@ def usage():
     print '''scikit-train builds the model using sklearn.ensemble.RandomForestClassifier
 usage: scikit_rf-train [OPTIONS] <dataset> <model>
 OPTIONS:
+
    Most options below directly correcspond to the arguments of
    sklearn.ensemble.RandomForestClassifier constructor. So, for
    detailed information see scikit learn's documentation.
 
-   So, for detailed information
-   -h   --help                     display this screen
-        --estimators <num>         the number of estimator (default: 10)
-        --criterion <criterion>    function to measure the quality of a split
-                                   (default: gini)
-        --max_features <features>  the number of features to consider
-                                   when looking for the best split
-        --max_depth <depth>        the maximum depth of the tree
-        --min_samples_split <num>  the minimum number of samples required
-                                   to split an internal node
-        --min_samples_leaf <num>   the minimum number of samples required
-                                   to split an internal node
-        --max_leaf_nodes <num>     grow trees with max_leaf_nodes in
+   -h   --help                     Display this screen.
+        --estimators <num>         The number of estimator (default: 10).
+        --criterion <criterion>    Function to measure the quality of a split
+                                   (default: gini).
+        --max_features <features>  The number of features to consider
+                                   when looking for the best split.
+        --max_depth <depth>        The maximum depth of the tree.
+        --min_samples_split <num>  The minimum number of samples required
+                                   to split an internal node.
+        --min_samples_leaf <num>   The minimum number of samples required
+                                   to split an internal node.
+        --max_leaf_nodes <num>     Grow trees with max_leaf_nodes in
                                    best-first fashion. Best nodes are defined
                                    as relative reduction in impurity.
                                    If None then unlimited number of leaf nodes
-                                   (default: None)
+                                   (default: None).
         --min_impurity_split <t>   Threshold for early stopping in tree growth.
                                    A node will split if its impurity is above
                                    the threshold, otherwise it is a leaf
-                                   (default: 1e-7)
+                                   (default: 1e-7).
         --bootstrap <flag>         Whether bootstrap samples are used
-                                   when building trees (default: True)
+                                   when building trees (default: True).
         --oob_score <flag>         Whether to use out-of-bag samples to
                                    estimate the generalization accuracy
-                                   (default: False)
-        --jobs <num>             The number of jobs to run in parallel
+                                   (default: False).
+        --jobs <num>               The number of jobs to run in parallel
                                    for both fit and predict. If -1, then the
                                    number of jobs is set to the number
-                                   of cores (default: 1)
-        --random_state <seed>      random seed (default: None)
-        --verbose <num>            controls the verbosity of the tree building
-                                   process (default: 0)
+                                   of cores (default: 1).
+        --random_state <seed>      Random seed (default: None).
+        --verbose <num>            Controls the verbosity of the tree building
+                                   process (default: 0).
         --warm_start <flag>        When set to True, reuse the solution of
                                    the previous call to fit and add more
                                    estimators to the ensemble, otherwise, just
-                                   fit a whole new forest (default: False)
-        --class_weight <weights>   ignored (default: None)
+                                   fit a whole new forest (default: False).
+        --class_weight <weights>   Ignored (default: None).
 '''
 
 def coerce(x):

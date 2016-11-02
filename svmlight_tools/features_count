@@ -1,0 +1,27 @@
+#!/usr/bin/env runawk
+
+#use "power_getopt.awk"
+
+#.begin-str help
+# features_count calculate the number of features in input datasets
+# usage: features_count [OPTIONS] [files...]
+# OPTIONS:
+#   -h|--help       display this screen
+#.end-str
+
+{
+	for (i=2; i <= NF; ++i){
+		c = $i + 0
+		if (c > features_count)
+			features_count = c
+	}
+}
+
+FNR == 1 && NR > 1 {
+	print FILENAME, features_count + 1
+	features_count = 0
+}
+
+END {
+	print FILENAME, features_count + 1
+}

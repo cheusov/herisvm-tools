@@ -1,0 +1,134 @@
+#!/bin/sh
+
+# Copyright (c) 2015-2016 Aleksey Cheusov <vle@gmx.net>
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+set -e
+
+def=`printf 'Macro average\tf1'`
+
+: ${HERISVM_CLEAN_DATASET_METRICS:=$def}
+: ${HERISVM_CLEAN_DATASET_THRESHOLD:=0.98}
+: ${HERISVM_INCORRECT_CLASS_THRESHOLD:=0.8}
+: ${HERISVM_MAX_ITERATIONS:=20}
+
+: ${TMPDIR:=/tmp}
+export TMPDIR
+
+trap 'rm -rf $tmpdir' 0
+tmpdir=`mktemp -d`
+
+errors="$tmpdir/errors"
+results="$tmpdir/results"
+dataset="$tmpdir/dataset.libsvm"
+
+usage (){
+    cat 1>&2 <<EOF
+dataset_cleanup [OPTIONS] <dataset>
+OPTIONS:
+   -h                  display this screen
+   -t <value>          threshold for "dataset is clean" [0..1]
+   -T <value>          threshold for "remove incorrectly classified object"
+   -M <metrics>        metrics   for "remove incorrectly classified object"
+   -n <iterations>     the maximum number of iterations
+EOF
+}
+
+while getopts hM:n:t:T: f; do
+    case "$f" in
+	'?')
+	    usage
+	    exit 1;;
+	h)
+	    usage
+	    exit 0;;
+	n)
+	    HERISVM_MAX_ITERATIONS="$OPTARG";;
+	M)
+	    HERISVM_CLEAN_DATASET_METRICS="$OPTARG";;
+	t)
+	    HERISVM_CLEAN_DATASET_THRESHOLD="$OPTARG";;
+	T)
+	    HERISVM_INCORRECT_CLASS_THRESHOLD="$OPTARG";;
+    esac
+done
+shift `expr $OPTIND - 1`
+
+cp "$1" "$dataset"
+
+get_current_quality (){
+    runawk -v t="$HERISVM_CLEAN_DATASET_METRICS" -e \
+	'BEGIN {FS="\t"} index($0, t) > 0 {print $3}' "$results"
+}
+
+get_outliers (){
+    runawk -v t="$HERISVM_INCORRECT_CLASS_THRESHOLD" -e \
+	   'NF >= 4 && $4+0.0 > t+0.0 {
+#		print "zzzz " $0
+		sub(/^#/, "", $1)
+		print $1
+	   }' "$errors"
+}
+
+filter_out_objects (){
+    # $1 -- objects to remove from dataset
+    runawk -v objects="$1" -e \
+	   'BEGIN {
+		sub(/[[:space:]]/, " ", objects)
+		cnt = split(objects, arr)
+		for (i in arr)
+		    remove[arr[i]]=1
+	    }
+	    ! (NR in remove)' "$dataset"
+}
+
+for iteration in `seq $HERISVM_MAX_ITERATIONS`; do
+    echo "iteration $iteration" 1>&2
+
+    if ! test -s "$dataset"; then
+	echo "Dataset $dataset either do not exist or is empty" 1>&2
+	exit 1
+    fi
+
+    heri-eval -p '-R' -O "$errors" -Mt -n 5 -t 4 "$dataset" > "$results"
+    quality=`get_current_quality`
+    echo "   quality: $quality" 1>&2
+    if expr "$quality" '>' "$HERISVM_CLEAN_DATASET_THRESHOLD" >/dev/null; then
+	# dataset is already clean
+	cat "$dataset"
+	exit 0
+    fi
+    outliers=`get_outliers`
+    echo "   outliers: $(echo "$outliers" | awk 'END {print NR}') out of $(awk 'END {print NR}' $dataset)" 1>&2
+    outliers=`echo $outliers`
+
+    if test -z "$outliers"; then
+	# no objects to remove
+	echo "No highly-scored outliers. We are sorry" 1>&2
+	exit
+    fi
+
+    filter_out_objects "$outliers" > "$dataset.tmp"
+    mv "$dataset.tmp" "$dataset"
+#    diff -u "$dataset" "$dataset.tmp"
+done
+
+echo 'Too many iterations. The process either diverges or converges too slowly' 1>&2

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env runawk
 
 # Copyright (c) 2016 Aleksey Cheusov <vle@gmx.net>
 #
@@ -21,4 +21,22 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-sed -e 's/[|]//' "$@"
+#use "power_getopt.awk"
+
+#.begin-str help
+#.end-str
+
+{
+	if ($2 == "|"){
+		$2 = ""
+	}else if ($3 == "|"){
+		$2 = $3 = ""
+	}else if ($4 == "|"){
+		$2 = $3 = $4 = ""
+	}else if ($5 == "|"){
+		$2 = $3 = $4 = $5 = ""
+	}
+
+	gsub(/[[:space:]][[:space:]]+/, " ")
+	print $0
+}

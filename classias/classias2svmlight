@@ -48,7 +48,10 @@ feature_gen = IdGenerator.new
 while line = gets do
   tokens = line.chop.split(/ /)
   ids = []
-  print "#{class_gen.get_id(tokens[0].to_i.to_s)} "
+  label = tokens[0]
+  label = label.to_i.to_s if label =~ /^[-+0-9]/
+  label = class_gen.get_id(label)
+  print "#{label.to_s} "
 
   tokens.shift
 

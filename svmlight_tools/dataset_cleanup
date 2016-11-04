@@ -42,17 +42,22 @@ dataset="$tmpdir/dataset.libsvm"
 
 usage (){
     cat 1>&2 <<EOF
-dataset_cleanup [OPTIONS] <dataset>
+usage:
+   dataset_cleanup [OPTIONS] <dataset>
+   dataset_cleanup [OPTIONS] -o <dataset>
 OPTIONS:
    -h                  display this screen
    -t <value>          threshold for "dataset is clean" [0..1]
    -T <value>          threshold for "remove incorrectly classified object"
    -M <metrics>        metrics   for "remove incorrectly classified object"
    -n <iterations>     the maximum number of iterations
+   -r <filename>       save numbers (based on 1) of removed objects
+                       to the specified file
+   -o                  output all outliers with all in descending order
 EOF
 }
 
-while getopts hM:n:t:T: f; do
+while getopts hM:n:or:t:T: f; do
     case "$f" in
 	'?')
 	    usage
@@ -64,6 +69,10 @@ while getopts hM:n:t:T: f; do
 	    HERISVM_MAX_ITERATIONS="$OPTARG";;
 	M)
 	    HERISVM_CLEAN_DATASET_METRICS="$OPTARG";;
+	o)
+	    output_outliers=1;;
+	r)
+	    removed_objects_fn="$OPTARG";;
 	t)
 	    HERISVM_CLEAN_DATASET_THRESHOLD="$OPTARG";;
 	T)
@@ -72,7 +81,8 @@ while getopts hM:n:t:T: f; do
 done
 shift `expr $OPTIND - 1`
 
-cp "$1" "$dataset"
+original_dataset="$1"
+cp "$original_dataset" "$dataset"
 
 get_current_quality (){
     runawk -v t="$HERISVM_CLEAN_DATASET_METRICS" -e \
@@ -100,6 +110,17 @@ filter_out_objects (){
 	    ! (NR in remove)' "$dataset"
 }
 
+output_removed_objects (){
+    runawk -e '
+	FILENAME == ARGV[1] {
+	    h[$0]=NR
+	    next
+	}
+	!($0 in h) {
+	    print FNR
+	}' "$dataset" "$original_dataset"
+}
+
 for iteration in `seq $HERISVM_MAX_ITERATIONS`; do
     echo "iteration $iteration" 1>&2
 
@@ -109,10 +130,20 @@ for iteration in `seq $HERISVM_MAX_ITERATIONS`; do
     fi
 
     heri-eval -p '-R' -O "$errors" -Mt -n 5 -t 4 "$dataset" > "$results"
+
+    if test -n "$output_outliers"; then
+	sort -k4,4gr "$errors"
+	exit 0
+    fi
+
     quality=`get_current_quality`
     echo "   quality: $quality" 1>&2
     if expr "$quality" '>' "$HERISVM_CLEAN_DATASET_THRESHOLD" >/dev/null; then
 	# dataset is already clean
+	if test -n "$removed_objects_fn"; then
+	    output_removed_objects > "$removed_objects_fn"
+	fi
+
 	cat "$dataset"
 	exit 0
     fi

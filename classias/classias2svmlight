@@ -63,7 +63,7 @@ while line = gets do
       tokens[i][1] = tokens[i][1].to_f
     end
   end
-  tokens = tokens.sort_by { |v| v[0]}.collect {|v| v[0].to_s + ":" + v[1].to_s}
+  tokens = tokens.sort_by { |v| v[0]}.collect {|v| v[0].to_s + ":" + v[1].to_s}.uniq
 
 #  puts tokens.inspect
 #  (1...tokens.size).each do |i|

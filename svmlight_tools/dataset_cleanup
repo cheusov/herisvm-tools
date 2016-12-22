@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (c) 2015-2016 Aleksey Cheusov <vle@gmx.net>
+# Copyright (c) 2016 Aleksey Cheusov <vle@gmx.net>
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -54,10 +54,13 @@ OPTIONS:
    -r <filename>       save numbers (based on 1) of removed objects
                        to the specified file
    -o                  output all outliers with all in descending order
+   -S <seed>           the maximum number of iterations
 EOF
 }
 
-while getopts hM:n:or:t:T: f; do
+seed=105
+
+while getopts hM:n:or:t:T:S: f; do
     case "$f" in
 	'?')
 	    usage
@@ -73,6 +76,8 @@ while getopts hM:n:or:t:T: f; do
 	    output_outliers=1;;
 	r)
 	    removed_objects_fn="$OPTARG";;
+	S)
+	    seed="$OPTARG";;
 	t)
 	    HERISVM_CLEAN_DATASET_THRESHOLD="$OPTARG";;
 	T)
@@ -129,7 +134,7 @@ for iteration in `seq $HERISVM_MAX_ITERATIONS`; do
 	exit 1
     fi
 
-    heri-eval -p '-R' -O "$errors" -Mt -n 5 -t 4 "$dataset" > "$results"
+    heri-eval -p '-R' -O "$errors" -S "$seed" -Mt -n 5 -t 4 "$dataset" > "$results"
 
     if test -n "$output_outliers"; then
 	sort -k4,4gr "$errors"
@@ -154,7 +159,7 @@ for iteration in `seq $HERISVM_MAX_ITERATIONS`; do
     if test -z "$outliers"; then
 	# no objects to remove
 	echo "No highly-scored outliers. We are sorry" 1>&2
-	exit
+	exit 1
     fi
 
     filter_out_objects "$outliers" > "$dataset.tmp"
@@ -163,3 +168,4 @@ for iteration in `seq $HERISVM_MAX_ITERATIONS`; do
 done
 
 echo 'Too many iterations. The process either diverges or converges too slowly' 1>&2
+exit 2

@@ -1,0 +1,117 @@
+#!/bin/sh
+
+# Copyright (c) 2016 Aleksey Cheusov <vle@gmx.net>
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+set -e
+export LC_ALL=C
+
+sig_handler (){
+    on_exit
+    trap - "$1"
+    kill -"$1" $$
+}
+
+on_exit(){
+    if test -z "$keep_tmp"; then
+	if test -n "$tmp_dir"; then
+	    rm -rf "$tmp_dir"
+	fi
+    else
+	echo "Temporary files are here $tmp_dir" 1>&2
+    fi
+}
+
+trap "sig_handler INT"  INT
+trap "on_exit" 0
+
+usage(){
+    cat 1>&2 <<'EOF'
+usage: bagging-train [OPTIONS] training_set model_file [-- SUB_OPTIONS]
+Examples:
+    bagging-train -r 70 -n 100 dataset.libsvm model_file
+
+OPTIONS:
+      -h           help message
+      -n <num>     the number of submodels, mandatory option, 20 by default
+      -r <ratio>   ratio in percents for subset of dataset, 60 by default
+      -S <seed>    seed for PRNG
+EOF
+}
+
+ratio=60
+num=20
+seed=`awk 'BEGIN {srand(); print int(1000000 * rand())}'`
+while getopts hn:r:S: f; do
+    case "$f" in
+	'?')
+	    usage
+	    exit 1;;
+	h)
+	    usage
+	    exit 0;;
+	n)
+	    num="$OPTARG";;
+	r)
+	    ratio="$OPTARG";;
+	S)
+	    seed="$OPTARG";;
+    esac
+done
+shift `expr $OPTIND - 1`
+
+if test 2 -ne $#; then
+    echo 'Two arguments are expected' 1>&2
+    usage
+    exit 1
+fi
+
+dataset="$1"
+model="$2"
+
+tmp_dir=`mktemp -d $TMPDIR/svm.XXXXXX`
+
+train='linear-train -s 0 -q'
+predict='linear-predict -b 1 -q'
+
+rm -f "$model"
+
+cd "$tmp_dir"
+
+for i in `seq $num`; do
+    sub_dataset="dataset.libsvm"
+    sub_model="binary_$i.model"
+
+    runawk -v ratio="$ratio" -v seed=`expr $i + "$seed"` -e '
+    BEGIN {
+	srand(seed)
+    }
+    rand() * 100 < ratio + 0 {
+	print
+    }
+    ' "$dataset" > "$sub_dataset"
+#    cksum "$sub_dataset"
+#    wc -l "$sub_dataset"
+
+    $train "$sub_dataset" "$sub_model" > /dev/null
+    #    ls -l "$tmp_dir"
+    tar -rf "$model" "$sub_model"
+done

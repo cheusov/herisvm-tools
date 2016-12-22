@@ -1,0 +1,69 @@
+#!/usr/bin/env ruby
+
+# Copyright (c) 2016 Aleksey Cheusov <vle@gmx.net>
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+items = []
+last_file = nil
+line_number = nil
+fnr = nil
+file_count = 0
+
+while line = gets do
+  if $<.filename != last_file
+    file_count += 1
+    last_file = $<.filename
+    line_number = $.
+  end
+
+  fnr = $. - line_number
+  if fnr >= items.size()
+    items << Hash.new(0.0)
+  end
+
+  hash = items[fnr]
+
+  tokens = line.split()
+#  puts tokens.inspect()
+
+  i = 0
+  while i < tokens.size() do
+    hash[tokens[i]] += tokens[i+1].to_f
+    i += 2
+  end
+#  puts hash.inspect()
+end
+
+items.each_with_index do |v, i|
+  items[i] = v.sort_by {|_key, value| -value}
+end
+
+items.each do |v|
+#  puts v.class
+#  v.each do |x|
+#    puts x
+#  end
+  line = ""
+  v.each do |x|
+    line += (" %s %s" % [x[0], x[1]/file_count])
+  end
+  puts line.sub(/^ /, "")
+end

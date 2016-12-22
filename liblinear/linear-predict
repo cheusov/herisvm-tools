@@ -44,13 +44,26 @@ postprocess (){
 	    if ($1 != "labels")
 		exit 1
 	    for (i=2; i <= NF; ++i){
-		label2idx [$i] = i-1
+		idx2label[i-1] = $i
+		label2idx[$i] = i-1
 	    }
 	    next
 	}
 	{
-	    print $1, $(label2idx[$1]+1)
-	}' "$@"
+	    skip_label = $1
+	    $1 = ($1 " " $(1+label2idx[$1]))
+	    for (label in label2idx){
+		idx = label2idx[label]
+		if (skip_label == label){
+		    $(idx+1) = ""
+		}else{
+		    $(idx+1) = label " " $(idx+1)
+		}
+	    }
+	    gsub(/  +/, " ")
+	    print $0
+	}
+	' "$@"
 }
 
 get_3rd_arg (){

@@ -26,6 +26,8 @@
 #.begin-str help
 #.end-str
 
+#interp "mawk"
+
 {
 	if ($2 == "|"){
 		$2 = ""

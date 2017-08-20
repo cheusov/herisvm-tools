@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+
+target_class = "-1"
+$points = 30
+
+results = []
+while line = gets do
+  tokens = line.split()
+  (1...tokens.size).step(2) do |i|
+    if tokens[i] != target_class
+      next
+    end
+
+    results << [tokens[0], tokens[i+1].to_f]
+  end
+end
+
+results = results.sort_by { |v|  v[1] }
+
+def calc_step(count)
+  step = count / $points
+  step = 1 if step == 0
+  return step
+end
+
+step = calc_step(results.size)
+
+tp = []
+golds = []
+barriers = []
+curr_tp = 0
+total_count = 0
+last_v = results[0]
+
+results.each_with_index do |v, i|
+  if v[0] == target_class
+    curr_tp += 1
+    total_count += 1
+  end
+
+  if ((i+1) % step) == 0 or i == results.size-1
+    if total_count > 0 or i == results.size-1
+      tp << curr_tp
+      barriers << i
+      curr_tp = 0
+      if i < results.size-1
+        last_v = results[i+1]
+      end
+    else
+      step = calc_step(results.size - i)
+    end
+  end
+end
+
+#puts "tp: " + tp.inspect
+#puts "barriers: " + barriers.inspect
+
+totals = tp.inject(:+)
+
+puts "0 0"
+
+sum_tp = 0
+sum_extracted = 0
+(tp.size-1).downto(0) do |i|
+  curr_extracted = if i == 0 then barriers[0]+1 else barriers[i] - barriers[i-1] end
+
+  sum_tp += tp[i]
+  sum_extracted += curr_extracted
+
+  printf "%6.3g %6.3g\n",
+         sum_tp.to_f / totals * 100.0,
+         sum_tp.to_f / sum_extracted * 100.0
+#  printf "%6.3g (%d/%d)  %6.3g (%d/%d)\n", sum_tp.to_f / totals * 100.0, sum_tp, totals, sum_tp.to_f / sum_extracted * 100.0, sum_tp, sum_extracted
+end

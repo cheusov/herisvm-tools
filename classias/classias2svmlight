@@ -46,14 +46,20 @@ feature_gen = IdGenerator.new
 #class_gen.get_id("-1")
 
 while line = gets do
-  tokens = line.chop.split(/ /)
+  tokens = line.chop.gsub(/\s+/, " ").split(/ /)
   ids = []
-  label = tokens[0]
-  label = label.to_i.to_s if label =~ /^[-+0-9]/
-  label = class_gen.get_id(label)
-  print "#{label.to_s} "
+  index_of_pipeline = tokens.index("|")
+  tokens[0] = tokens[0].to_i.to_s if tokens[0] =~ /^[-+0-9]/
+  tokens[0] = class_gen.get_id(tokens[0])
 
-  tokens.shift
+  if !index_of_pipeline; then
+    index_of_pipeline = 0
+  end
+
+  (0..index_of_pipeline).each do |idx|
+    print "#{tokens[0].to_s} "
+    tokens.shift
+  end
 
   (0...tokens.size).each do |i|
     tokens[i] = tokens[i].split(":")

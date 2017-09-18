@@ -67,12 +67,12 @@ while line = gets do
     tokens[i][0] = feature_gen.get_id(tokens[i][0])
 
     if tokens[i].size == 1
-      tokens[i] << 1.0
+      tokens[i] << 1
     else
       tokens[i][1] = tokens[i][1].to_f
     end
   end
-  tokens = tokens.sort_by { |v| v[0]}.collect {|v| v[0].to_s + ":" + v[1].to_s}.uniq
+  tokens = tokens.sort_by {|v| v[0]}.uniq {|v| v[0]}.collect {|v| v[0].to_s + ":" + v[1].to_s}
 
 #  puts tokens.inspect
 #  (1...tokens.size).each do |i|

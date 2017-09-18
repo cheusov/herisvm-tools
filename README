@@ -1,2 +1,5 @@
 herisvm-tools is a collection of tools used together with
 https://github.com/cheusov/herisvm
+
+At the moment these tools has neither regression tests nor a proper
+documentation.  So, use it with caution and RTFS first!

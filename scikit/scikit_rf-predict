@@ -58,8 +58,14 @@ if 'HERISVM_FC' in os.environ:
     fc=int(os.environ['HERISVM_FC'])
     X_test = resize_csr_matrix(X_test, fc)
 
-result = clf.predict(X_test)
+result = clf.predict_proba(X_test)
+labels_count = result.shape[1]
 
 with open(sys.argv [3], 'w') as output:
-    for i in range(0, len(result)):
-        output.write('%d' % (result [i]) + "\n")
+    for i in range(0, result.shape[0]):
+        max_index = numpy.argmax(result[i])
+        output.write("%d %f" % (clf.classes_[max_index], result[i][max_index]))
+        for j in range(0, result.shape[1]):
+            if j != max_index:
+                output.write(" %d %f" % (clf.classes_[j], result[i][j]))
+        output.write('\n')

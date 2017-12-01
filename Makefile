@@ -1,7 +1,7 @@
 PROJECTNAME =	herisvm-tools
 
 subprojects = scikit liblinear classias vowpal_wabbit jliblinear jsvm \
-  svmlight_tools bagging curves
+  svmlight_tools bagging curves classias2svmlight_JudyHS
 
 SUBPRJ = ${subprojects:S/$/:scripts/} doc scripts:tests
 

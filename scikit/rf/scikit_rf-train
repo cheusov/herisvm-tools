@@ -22,34 +22,11 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import pickle
-import numpy
 import sys
-import os
 import getopt
-from scipy.sparse import csr_matrix, coo_matrix, hstack
-#from svmlight_loader import load_svmlight_file
+
+from svmlight_loader import load_svmlight_file
 from sklearn import ensemble
-from sklearn.datasets import load_svmlight_file
-
-def resize_csr_matrix(matrix, fc):
-    new_feature_count = fc
-
-    n_objects = matrix.shape[0]
-    n_features = matrix.shape[1]
-
-    matrix = coo_matrix(matrix)
-    n_items = matrix.row.shape[0]
-
-    matrix.row.resize(n_items + n_objects)
-    matrix.col.resize(n_items + n_objects)
-    matrix.data.resize(n_items + n_objects)
-
-    for i in range(n_objects):
-        matrix.row.put(n_items + i, i)
-        matrix.col.put(n_items + i, new_feature_count-1)
-        matrix.data.put(n_items + i, 1.0)
-
-    return csr_matrix(coo_matrix((matrix.data, (matrix.row, matrix.col)), shape=(n_objects, new_feature_count)))
 
 def usage():
     print '''scikit-train builds the model using sklearn.ensemble.RandomForestClassifier
@@ -189,10 +166,6 @@ for o,a in opts:
 
 X_train, y_train = load_svmlight_file(args[0])
 
-if 'HERISVM_FC' in os.environ:
-    fc=int(os.environ['HERISVM_FC'])
-    X_train = resize_csr_matrix(X_train, fc)
-
 clf = ensemble.RandomForestClassifier(
     n_estimators=estimators, criterion=criterion, max_features=max_features,
     max_depth=max_depth, min_samples_split=min_samples_split,
@@ -201,6 +174,8 @@ clf = ensemble.RandomForestClassifier(
     max_leaf_nodes=max_leaf_nodes, #min_impurity_split=min_impurity_split,
     bootstrap=bootstrap, oob_score=oob_score, n_jobs=jobs, random_state=random_state,
     verbose=verbose, warm_start=warm_start, class_weight=class_weight)
+
 clf.fit(X_train, y_train)
 with open(args[1], 'wb') as f:
     pickle.dump(clf, f)
+    pickle.dump(X_train.shape[1], f)

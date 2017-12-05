@@ -26,21 +26,24 @@ import pickle
 import sys
 
 from svmlight_loader import load_svmlight_file
-from sklearn import svm
+from sklearn import ensemble
 
 with open(sys.argv [2], 'rb') as f:
     clf = pickle.load(f)
     n_features = pickle.load(f)
-
+#    print n_features
     X_test, y_test = load_svmlight_file(sys.argv [1], n_features)
 
-result = clf.decision_function(X_test)
+#print X_test.tocoo()
+
+labels_count = result.shape[1]
 
 with open(sys.argv [3], 'w') as output:
-    for i in range(0, result.shape[0]):
-        max_index = numpy.argmax(result[i])
-        output.write("%d %f" % (clf.classes_[max_index], result[i][max_index]))
-        for j in range(0, result.shape[1]):
+    for i in range(0, X_test.shape[0]):
+        result = clf.predict_proba(X_test[i])
+        max_index = numpy.argmax(result)
+        output.write("%d %f" % (clf.classes_[max_index], result[max_index]))
+        for j in range(0, X_test.shape[1]):
             if j != max_index:
-                output.write(" %d %f" % (clf.classes_[j], result[i][j]))
+                output.write(" %d %f" % (clf.classes_[j], result[j]))
         output.write('\n')

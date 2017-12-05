@@ -21,42 +21,28 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from scipy.sparse import csr_matrix, coo_matrix, hstack
+import numpy
 import pickle
 import sys
-import os
 
-#from svmlight_loader import load_svmlight_file
-from sklearn.datasets import load_svmlight_file
-from sklearn import tree
+from svmlight_loader import load_svmlight_file
+from sklearn import svm
 
-def resize_csr_matrix(matrix, fc):
-    new_feature_count = fc
+with open(sys.argv [2], 'rb') as f:
+    clf = pickle.load(f)
+    n_features = pickle.load(f)
 
-    n_objects = matrix.shape[0]
-    n_features = matrix.shape[1]
+    X_test, y_test = load_svmlight_file(sys.argv [1], n_features)
 
-    matrix = coo_matrix(matrix)
-    n_items = matrix.row.shape[0]
+results = clf.decision_function(X_test)
 
-    matrix.row.resize(n_items + n_objects)
-    matrix.col.resize(n_items + n_objects)
-    matrix.data.resize(n_items + n_objects)
-
-    for i in range(n_objects):
-        matrix.row.put(n_items + i, i)
-        matrix.col.put(n_items + i, new_feature_count-1)
-        matrix.data.put(n_items + i, 1.0)
-
-    return csr_matrix(coo_matrix((matrix.data, (matrix.row, matrix.col)), shape=(n_objects, new_feature_count)))
-
-X_train, y_train = load_svmlight_file(sys.argv [1])
-
-if 'HERISVM_FC' in os.environ:
-    fc=int(os.environ['HERISVM_FC'])
-    X_train = resize_csr_matrix(X_train, fc)
-
-clf = tree.DecisionTreeClassifier()
-clf.fit(X_train, y_train)
-with open(sys.argv [2], 'wb') as f:
-    pickle.dump(clf, f)
+with open(sys.argv [3], 'w') as output:
+    for i in range(0, results.shape[0]):
+        max_index = numpy.argmax(results[i])
+#        print type(clf.classes_)
+#        print type(results[i])
+        output.write("%d %f" % (clf.classes_[max_index], results[i][max_index]))
+        for j in range(0, results.shape[1]):
+            if j != max_index:
+                output.write(" %d %f" % (clf.classes_[j], results[i][j]))
+        output.write('\n')

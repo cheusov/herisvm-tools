@@ -1,15 +1,12 @@
 PROJECTNAME =	herisvm-tools
 
 subprojects = scikit liblinear classias vowpal_wabbit jliblinear jsvm \
-  svmlight_tools bagging curves classias2svmlight_JudyHS
+  svmlight_tools bagging curves classias2svmlight_JudyHS datasets
 
-SUBPRJ = ${subprojects:S/$/:scripts/} doc scripts:tests
+subprojects += scikit/linear:scikit scikit/dt:scikit scikit/rf:scikit
+
+SUBPRJ = ${subprojects} doc scripts
 
 MKC_REQD    =	0.29.1
-
-NODEPS      =	*:test-tests
-
-test : all-tests test-tests
-	@:
 
 .include <mkc.mk>

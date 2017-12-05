@@ -21,43 +21,19 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from scipy.sparse import csr_matrix, coo_matrix, hstack
 import pickle
 import sys
-import os
 
-from sklearn.datasets import load_svmlight_file
-#from svmlight_loader import load_svmlight_file
-from sklearn import tree
-
-def resize_csr_matrix(matrix, fc):
-    new_feature_count = fc
-
-    n_objects = matrix.shape[0]
-    n_features = matrix.shape[1]
-
-    matrix = coo_matrix(matrix)
-    n_items = matrix.row.shape[0]
-
-    matrix.row.resize(n_items + n_objects)
-    matrix.col.resize(n_items + n_objects)
-    matrix.data.resize(n_items + n_objects)
-
-    for i in range(n_objects):
-        matrix.row.put(n_items + i, i)
-        matrix.col.put(n_items + i, new_feature_count-1)
-        matrix.data.put(n_items + i, 1.0)
-
-    return csr_matrix(coo_matrix((matrix.data, (matrix.row, matrix.col)), shape=(n_objects, new_feature_count)))
+from svmlight_loader import load_svmlight_file
+from sklearn import ensemble
 
 with open(sys.argv [2], 'rb') as f:
     clf = pickle.load(f)
+    n_features = pickle.load(f)
+    print n_features
+    X_test, y_test = load_svmlight_file(sys.argv [1], n_features)
 
-    X_test, y_test = load_svmlight_file(sys.argv [1])
-
-if 'HERISVM_FC' in os.environ:
-    fc=int(os.environ['HERISVM_FC'])
-    X_test = resize_csr_matrix(X_test, fc)
+#print X_test.tocoo()
 
 result = clf.predict(X_test)
 

@@ -33,13 +33,14 @@ with open(sys.argv [2], 'rb') as f:
 
     X_test, y_test = load_svmlight_file(sys.argv [1], n_features)
 
-result = clf.predict_proba(X_test)
+labels_count = clf.classes_.size
 
 with open(sys.argv [3], 'w') as output:
-    for i in range(0, result.shape[0]):
-        max_index = numpy.argmax(result[i])
-        output.write("%d %f" % (clf.classes_[max_index], result[i][max_index]))
-        for j in range(0, result.shape[1]):
+    for i in range(0, X_test.shape[0]):
+        results = clf.predict_proba(X_test[i])[0]
+        max_index = numpy.argmax(results)
+        output.write("%d %f" % (clf.classes_[max_index], results[max_index]))
+        for j in range(0, labels_count):
             if j != max_index:
-                output.write(" %d %f" % (clf.classes_[j], result[i][j]))
+                output.write(" %d %f" % (clf.classes_[j], results[j]))
         output.write('\n')

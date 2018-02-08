@@ -38,8 +38,6 @@ labels_count = clf.classes_.size
 with open(sys.argv [3], 'w') as output:
     for i in range(0, X_test.shape[0]):
         results = clf.predict_proba(X_test[i])[0]
-        if isinstance(results, float):
-            results = (results, - results)
         max_index = numpy.argmax(results)
         output.write("%d %f" % (clf.classes_[max_index], results[max_index]))
         for j in range(0, labels_count):

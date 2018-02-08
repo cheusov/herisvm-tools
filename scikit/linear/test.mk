@@ -9,7 +9,7 @@ test_output: .PHONY
 	scikit_linear-train ${ds}/tiny_train.libsvm ${model}; \
 	scikit_linear-predict ${ds}/tiny_predict.libsvm ${model} ${predicts}; \
 	echo '======= test scikit_linear (tiny) ======='; \
-	cat ${predicts}
+	awk '{print $$1}' ${predicts}
 
 CLEANFILES +=	${model} ${predicts}
 

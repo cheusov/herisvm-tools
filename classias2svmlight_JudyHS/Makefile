@@ -6,4 +6,5 @@ MKC_REQUIRE_HEADERS =	Judy.h
 
 WARNS =		3
 
+.include "test.mk"
 .include <mkc.mk>

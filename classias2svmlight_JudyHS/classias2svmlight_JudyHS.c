@@ -44,7 +44,7 @@ static uint64_t hash_func(const char *str, size_t str_len)
 
 static int get_uniq_id(const char *str, size_t str_len, PPvoid_t hash, int *id)
 {
-	PWord_t ret = (PWord_t) JudyHSIns(hash, (void **) str, str_len, NULL);
+	PWord_t ret = (PWord_t) JudyHSIns(hash, (void *)str, str_len, NULL);
 //	PWord_t ret = (PWord_t) JudyLIns(hash, hash_func(str, str_len), NULL);
 	if (ret == PJERR){
 		fprintf(stderr, "Out of memory -- exit\n");
@@ -56,7 +56,7 @@ static int get_uniq_id(const char *str, size_t str_len, PPvoid_t hash, int *id)
 		*ret = *id;
 	}
 
-	return *ret;
+	return *ret - 1;
 }
 
 static void parse_feature_line(char *line)
@@ -139,7 +139,7 @@ static void process_stream(FILE *stream)
 	char *line = NULL;
 	size_t n = 0;
 
-	Word_t freed_mem = 0;
+//	Word_t freed_mem = 0;
 
 	while ((len = getline(&line, &n, stream)) != -1){
 		if (len > 0){
@@ -154,8 +154,41 @@ static void process_stream(FILE *stream)
 //	printf("JudyHSFreeArray() free'ed %lu bytes of memory\n", (unsigned long)freed_mem);
 }
 
+static void usage (void)
+{
+	fprintf(stderr, "\
+classias2svmlight programs converts dataset in classias format\n\
+   to svmlight format.\n\
+Usage: classias2svmlight [OPTIONS] [files...]\n\
+OPTIONS:\n\
+   -h      dislay this screen\
+");
+}
+
+static int process_args(int argc, char **argv)
+{
+	int c;
+
+	while (c = getopt (argc, argv, "h"), c != EOF){
+		switch (c){
+			case 'h':
+				usage();
+				exit(0);;
+			default:
+				usage ();
+				exit (1);
+		}
+	}
+
+	return optind;
+}
+
 int main(int argc, char **argv)
 {
+	int seen = process_args(argc, argv);
+	argc -= seen;
+	argv += seen;
+
 	process_stream(stdin);
 
 	return 0;

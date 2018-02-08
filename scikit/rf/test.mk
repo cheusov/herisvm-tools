@@ -9,7 +9,7 @@ test_output: .PHONY
 	scikit_rf-train ${ds}/tiny_train.libsvm ${model}; \
 	scikit_rf-predict ${ds}/tiny_predict.libsvm ${model} ${predicts}; \
 	echo '======= test scikit_rf (tiny) ======='; \
-	cat ${predicts}
+	awk '{print $$1}' ${predicts}
 
 CLEANFILES +=	${model} ${predicts}
 

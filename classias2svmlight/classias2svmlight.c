@@ -193,7 +193,7 @@ static int process_args(int argc, char **argv)
 	return optind;
 }
 
-static void init_label_map()
+static void init_label_map(void)
 {
 	size_t i;
 	char *colon;

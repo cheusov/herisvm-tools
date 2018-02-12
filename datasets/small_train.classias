@@ -1,0 +1,10 @@
+one x:1 y:1
+one x:2 y:2
+one x:1 y:2
+one x:2 y:1
+two x:3 y:1
+two x:3 y:-1
+zero x:1 y:-1
+zero x:2 y:-2
+zero x:1 y:-2
+zero x:2 y:-1

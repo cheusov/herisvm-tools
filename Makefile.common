@@ -1,0 +1,4 @@
+WARNS = 4
+
+CFLAGS.dflt.gcc +=	-Werror=implicit-function-declaration -Werror=missing-prototypes #\
+# -Werror=strict-prototypes

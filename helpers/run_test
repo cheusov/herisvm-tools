@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# usage:
+#   run_test <commands_prefix> <training_set> <testing_set> <model> <output> <expected> <progress_message>
+
+: ${DIFF_CMD:=diff -u}
+
+set -e
+
+test $# -eq 7
+
+train_cmd="$1-train"
+predict_cmd="$1-predict"
+training_set="$2"
+testing_set="$3"
+model="$4"
+output="$5"
+expected="$6"
+message="$7"
+
+echo "$message"
+
+"$train_cmd" $TRAIN_CMD_OPTS "$training_set" "$model"
+"$predict_cmd" $PREDICT_CMD_OPTS "$testing_set" "$model" "$output"
+awk '{print $1}' "$output" > "$output.tmp"
+mv "$output.tmp" "$output"
+$DIFF_CMD "$expected" "$output"

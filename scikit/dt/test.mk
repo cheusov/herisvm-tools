@@ -5,7 +5,7 @@ output = ${.OBJDIR}/output.txt
 test: all
 	@set -e; \
 	\
-	export PATH=`pwd`:$$PATH; \
+	export PATH=`pwd`:${.OBJDIR}:$$PATH; \
 	../../helpers/run_test scikit_dt \
 	    ${ds}/tiny_train.libsvm ${ds}/tiny_predict.libsvm \
 	    ${model:Q} ${output:Q} expect1.out \

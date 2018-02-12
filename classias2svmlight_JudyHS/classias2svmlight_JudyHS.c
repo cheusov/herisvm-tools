@@ -20,6 +20,9 @@ static feature_t *features = NULL;
 static int features_count = 0;
 static int features_array_size = 0;
 
+static char * label_map = NULL;
+static int label_map_initializing = 1;
+
 static int compar(const void *a, const void *b)
 {
 	const feature_t *fa = (const feature_t *) a;
@@ -48,12 +51,19 @@ static int get_uniq_id(const char *str, size_t str_len, PPvoid_t hash, int *id)
 //	PWord_t ret = (PWord_t) JudyLIns(hash, hash_func(str, str_len), NULL);
 	if (ret == PJERR){
 		fprintf(stderr, "Out of memory -- exit\n");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
+
+//	fprintf(stderr, "str=%s str_len=%d id=%d\n", str, (int)str_len, *id);
 
 	if (*ret == 0){
 		*id += 1;
 		*ret = *id;
+
+		if (label_map != NULL && !label_map_initializing && hash == &labels_hash){
+			fprintf(stderr, "Unknown label '%s', set HSVM_LABEL_MAP environment variable properly\n", strndup(str, str_len));
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	return *ret - 1;
@@ -173,14 +183,59 @@ static int process_args(int argc, char **argv)
 		switch (c){
 			case 'h':
 				usage();
-				exit(0);;
+				exit(EXIT_SUCCESS);
 			default:
 				usage ();
-				exit (1);
+				exit (EXIT_FAILURE);
 		}
 	}
 
 	return optind;
+}
+
+static void init_label_map()
+{
+	size_t i;
+	char *colon;
+	char *end_of_digit = NULL;
+
+	label_map = getenv("HSVM_LABEL_MAP");
+	if (label_map == NULL)
+		return;
+
+	size_t len = strlen(label_map);
+	for (i=0; i<len; ++i){
+		switch (label_map[i]){
+			case ' ':
+			case '\t':
+				label_map[i] = '\0';
+		}
+	}
+
+	for (i=0; i<len; ++i){
+		if ('\0' == label_map[i])
+			continue;
+
+		colon = strchr(label_map + i, ':');
+		if (colon == NULL){
+			fprintf(stderr, "Missing colon symbol in HSVM_LABEL_MAP environment variable\n");
+			exit(EXIT_FAILURE);
+		}
+		*colon++ = '\0';
+
+		long id = (int)strtol(colon, &end_of_digit, 10);
+		if (*end_of_digit != '\0' || end_of_digit == colon){
+			fprintf(stderr, "Incorrect numeric identifier within HSVM_LABEL_MAP environment variable\n");
+			exit(EXIT_FAILURE);
+		}
+		id = get_uniq_id(label_map + i, strlen(label_map + i), &labels_hash, (int *)&id);
+
+//		fprintf(stderr, "%s -> '%s'\n", label_map+i, colon);
+//		fprintf(stderr, "%s -> '%d'\n", label_map+i, id);
+
+		i = strchr(colon, 0) - label_map;
+//		printf("i=%d\n", i);
+	}
 }
 
 int main(int argc, char **argv)
@@ -188,6 +243,10 @@ int main(int argc, char **argv)
 	int seen = process_args(argc, argv);
 	argc -= seen;
 	argv += seen;
+
+	label_map_initializing = 1;
+	init_label_map();
+	label_map_initializing = 0;
 
 	process_stream(stdin);
 

@@ -38,6 +38,12 @@ test: all
 	    classias2svmlight < ${ds}/small_train.classias \
 	    2> ${output} >/dev/null || true; \
 	diff -u expect4.out ${output}; \
+	echo '      succeeded'; \
+	echo 'Test #4.3'; \
+	env HSVM_LABEL_MAP='one:1 two: zero:0' \
+	    classias2svmlight ${ds}/small_train.classias \
+	    2> ${output} >/dev/null || true; \
+	diff -u expect4.out ${output}; \
 	echo '      succeeded'
 
 CLEANFILES +=	${output}

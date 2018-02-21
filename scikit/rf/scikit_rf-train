@@ -33,9 +33,9 @@ def usage():
 usage: scikit_rf-train [OPTIONS] <dataset> <model>
 OPTIONS:
 
-   Most options below directly correcspond to the arguments of
+   Most options below directly correspond to the arguments of
    sklearn.ensemble.RandomForestClassifier constructor. So, for
-   detailed information see scikit learn's documentation.
+   detailed information see scikit learn documentation.
 
    -h   --help                     Display this screen.
         --estimators <num>         The number of estimator (default: 10).

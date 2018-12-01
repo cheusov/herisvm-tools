@@ -25,11 +25,31 @@
 : ${GZIP_CMD:=gzip}
 : ${TMPDIR:=/tmp}
 
-while getopts b:qZ f; do
+set -e
+export LC_ALL=C
+
+usage(){
+    cat 1>&2 <<EOF
+linear-predict is simple wrapper over liblinear-predict program.
+usage: linear-predict [OPTIONS] testing_set_file model_file output_file
+OPTIONS:
+    -h          display this screen
+    -Z          read gzipped testing set from <testing_set_file>.gz
+    -b <num>    whether to output probability estimates, 0 or 1 (default 0);
+                currently for logistic regression only
+    -q          quiet mode (no outputs)
+EOF
+}
+
+
+while getopts b:hqZ f; do
     case "$f" in
 	'?')
 	    ${LIBLINEAR_PREDICT}
 	    exit 1;;
+	h)
+	    usage
+	    exit 0;;
 	b)
 	    with_probs=1
 	    opts="$opts -b $OPTARG";;

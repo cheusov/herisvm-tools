@@ -55,7 +55,7 @@ while getopts b:hqZ f; do
 	    opts="$opts -b $OPTARG";;
 	q)
 	    opts="$opts -q";;
-	-Z)
+	Z)
 	    compressed=1;;
     esac
 done
@@ -117,10 +117,10 @@ output_fn=`get_3rd_arg "$@"`
 input_fn="$1"
 
 mkfifo "$fifo_fn"
-mkfifo "$fifo2_fn"
+#mkfifo "$fifo2_fn" # unfortunately liblinear-predict does not work with FIFO
 
-if test -n "compressed"; then
-    $GZIP_CMD -dc "$input_fn".gz > "$fifo2_fn" &
+if test -n "$compressed"; then
+    $GZIP_CMD -dc "$input_fn".gz > "$fifo2_fn" #&
     input_fn="$fifo2_fn"
 fi
 

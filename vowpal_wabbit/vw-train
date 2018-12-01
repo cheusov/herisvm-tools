@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (c) 2016 Aleksey Cheusov <vle@gmx.net>
+# Copyright (c) 2016-2018 Aleksey Cheusov <vle@gmx.net>
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -21,24 +21,61 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+: ${VW:=vw}
+: ${GZIP_CMD:=gzip}
+: ${TMPDIR:=/tmp}
+
+set -e
+export LC_ALL=C
+
 usage (){
     cat 1>&2 <<EOF
 vw-train - wrapper over vw(1)
-
-usage: vw-train [OPTIONS] training_set_file model_file
-OPTIONS are passed directly to vw(1)
+usage: vw-train [OPTIONS] -- [VW_OPTIONS] training_set_file model_file
+OPTIONS:
+    -h     display this screen
+    -Z     read gzipped training set from <training_set_file>.gz
+VW_OPTIONS:
+    See $VW options for details
 EOF
 }
 
-if test "_-h" = "_$1"; then
-    usage
-    exit 0
-fi
+sig_handler (){
+    on_exit
+    trap - "$1"
+    kill -"$1" $$
+}
+
+on_exit(){
+    rm -rf "$tmp_dir"
+}
+
+trap "sig_handler INT"  INT
+trap "on_exit" 0
+
+compressed=
+while getopts hZ f; do
+    case "$f" in
+	'?')
+	    usage
+	    exit 1;;
+	h)
+	    usage
+	    exit 0;;
+	Z)
+	    compressed=1;;
+    esac
+done
+shift `expr $OPTIND - 1`
 
 if test $# -lt 2; then
     usage
     exit 1
 fi
+
+tmp_dir=`mktemp -d "$TMPDIR"/vw-train.XXXXXX`
+fifo_name="$tmp_dir/fifo"
+fifo2_name="$tmp_dir/fifo2"
 
 split_args (){
     while test $# -ne 2; do
@@ -55,8 +92,15 @@ split_args "$@" | {
     read training_set
     read model
 
-    tmpin="$training_set.vwtmp"
-    awk '{tag=$1; $1 = ""; print tag, "|" $0}' "$training_set" > "$tmpin"
+    if test -n "$compressed"; then
+	mkfifo "$fifo_name"
+	$GZIP_CMD -dc "$training_set.gz" > "$fifo_name" &
+	training_set="$fifo_name"
+    fi
 
-    eval "vw $tmpin --quiet -f $model $args"
+    mkfifo "$fifo2_name"
+    awk '{tag=$1; $1 = ""; print tag, "|" $0}' "$training_set" > "$fifo2_name" &
+
+    eval "$VW $fifo2_name --quiet -f $model $args"
+    wait
 }

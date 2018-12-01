@@ -83,6 +83,7 @@ if test -n "$compressed"; then
     cmd="$cmd $fifo_name $2"
     $GZIP_CMD -dc "$training_set.gz" > "$fifo_name" # &
     eval "$cmd"
+    wait
 else
     $LIBLINEAR_TRAIN "$@"
 fi

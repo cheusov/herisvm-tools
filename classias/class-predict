@@ -21,19 +21,52 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+: ${CLASSIAS_TAG:=classias-tag}
+: ${GZIP_CMD:=gzip}
+: ${TMPDIR:=/tmp}
+
+set -e
+export LC_ALL=C
+
 usage (){
     cat 1>&2 <<EOF
 class-predict - wrapper over classias-tag(1)
-
-usage: class-train [OPTIONS] testing_set_file model_file output_file
-OPTIONS are passed directly to classias-tag(1)
+usage: class-train [OPTIONS] -- [CL_OPTIONS] testing_set_file model_file output_file
+OPTIONS:
+    -h     display this screen
+    -Z     read gzipped training set from <training_set_file>.gz
+CL_OPTIONS:
+    See $CLASSIAS_TAG options for details
 EOF
 }
 
-if test "_-h" = "_$1"; then
-    usage
-    exit 0
-fi
+sig_handler (){
+    on_exit
+    trap - "$1"
+    kill -"$1" $$
+}
+
+on_exit(){
+    rm -rf "$tmp_dir"
+}
+
+trap "sig_handler INT"  INT
+trap "on_exit" 0
+
+compressed=
+while getopts hZ f; do
+    case "$f" in
+	'?')
+	    usage
+	    exit 1;;
+	h)
+	    usage
+	    exit 0;;
+	Z)
+	    compressed=1;;
+    esac
+done
+shift `expr $OPTIND - 1`
 
 if test $# -lt 3; then
     usage
@@ -56,5 +89,15 @@ split_args "$@" | {
     read input
     read model
     read output
+
+    if test -n "$compressed"; then
+	tmp_dir=`mktemp -d "$TMPDIR"/class-predict.XXXXXX`
+	fifo_name="$tmp_dir/fifo"
+
+	mkfifo "$fifo_name"
+	$GZIP_CMD -dc "$input.gz" > "$fifo_name" &
+	input="$fifo_name"
+    fi
+
     eval "classias-tag -m $model $args > $output < $input"
 }

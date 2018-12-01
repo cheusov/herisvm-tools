@@ -34,7 +34,7 @@ linear-train is simple wrapper over liblinear-train program.
 usage: linear-train [OPTIONS] -- [LL_OPTIONS] training_set_file model_file
 OPTIONS:
     -h     display this screen
-    -Z     read gzipped training <training_set_file>.gz
+    -Z     read gzipped training set from <training_set_file>.gz
 LL_OPTIONS:
     See $LIBLINEAR_TRAIN -h for details
 EOF
@@ -78,7 +78,7 @@ if test -n "$compressed"; then
     done
     tmp_dir=`mktemp -d "$TMPDIR"/linear-train.XXXXXX`
     fifo_name="$tmp_dir/fifo"
-#    mkfifo "$fifo_name"
+#    mkfifo "$fifo_name" # unfortunately liblinear-train does not work with FIFO
     training_set="$1"
     cmd="$cmd $fifo_name $2"
     $GZIP_CMD -dc "$training_set.gz" > "$fifo_name" # &

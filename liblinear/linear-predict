@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (c) 2016 Aleksey Cheusov <vle@gmx.net>
+# Copyright (c) 2016-2018 Aleksey Cheusov <vle@gmx.net>
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -22,8 +22,10 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 : ${LIBLINEAR_PREDICT:=liblinear-predict}
+: ${GZIP_CMD:=gzip}
+: ${TMPDIR:=/tmp}
 
-while getopts b:q f; do
+while getopts b:qZ f; do
     case "$f" in
 	'?')
 	    ${LIBLINEAR_PREDICT}
@@ -33,6 +35,8 @@ while getopts b:q f; do
 	    opts="$opts -b $OPTARG";;
 	q)
 	    opts="$opts -q";;
+	-Z)
+	    compressed=1;;
     esac
 done
 shift `expr $OPTIND - 1`
@@ -72,17 +76,37 @@ get_3rd_arg (){
     printf '%s\n' "$1"
 }
 
+sig_handler (){
+    on_exit
+    trap - "$1"
+    kill -"$1" $$
+}
+
+on_exit(){
+    rm -rf "$tmp_dir"
+}
+
+trap "sig_handler INT"  INT
+trap "on_exit" 0
+
+tmp_dir=`mktemp -d "$TMPDIR"/linear-predict.XXXXXX`
+fifo_fn="$tmp_dir"/1.pipe
+fifo2_fn="$tmp_dir"/2.pipe
+
 output_fn=`get_3rd_arg "$@"`
-fifo_fn="$output_fn".pipe
+input_fn="$1"
 
-trap "rm -f $fifo_fn" EXIT
-
-rm -f "$fifo_fn"
 mkfifo "$fifo_fn"
+mkfifo "$fifo2_fn"
+
+if test -n "compressed"; then
+    $GZIP_CMD -dc "$input_fn".gz > "$fifo2_fn" &
+    input_fn="$fifo2_fn"
+fi
 
 if test -n "$with_probs"; then
     postprocess < "$fifo_fn" > "$output_fn" &
-    $LIBLINEAR_PREDICT $opts "$1" "$2" "$fifo_fn"
+    $LIBLINEAR_PREDICT $opts "$input_fn" "$2" "$fifo_fn"
 else
-    $LIBLINEAR_PREDICT $opts "$@"
+    $LIBLINEAR_PREDICT $opts "$input_fn" "$2" "$3"
 fi

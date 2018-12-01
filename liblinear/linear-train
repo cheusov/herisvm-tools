@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (c) 2016 Aleksey Cheusov <vle@gmx.net>
+# Copyright (c) 2016-2018 Aleksey Cheusov <vle@gmx.net>
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -22,5 +22,67 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 : ${LIBLINEAR_TRAIN:=liblinear-train}
+: ${GZIP_CMD:=gzip}
+: ${TMPDIR:=/tmp}
 
-liblinear-train "$@"
+set -e
+export LC_ALL=C
+
+usage(){
+    cat 1>&2 <<EOF
+linear-train is simple wrapper over liblinear-train program.
+usage: linear-train [OPTIONS] -- [LL_OPTIONS] training_set_file model_file
+OPTIONS:
+    -h     display this screen
+    -Z     read gzipped training <training_set_file>.gz
+LL_OPTIONS:
+    See $LIBLINEAR_TRAIN -h for details
+EOF
+}
+
+sig_handler (){
+    on_exit
+    trap - "$1"
+    kill -"$1" $$
+}
+
+on_exit(){
+    rm -rf "$tmp_dir"
+}
+
+trap "sig_handler INT"  INT
+trap "on_exit" 0
+
+compressed=
+while getopts hZ f; do
+    case "$f" in
+	'?')
+	    usage
+	    exit 1;;
+	h)
+	    usage
+	    exit 0;;
+	Z)
+	    compressed=1;;
+    esac
+done
+shift `expr $OPTIND - 1`
+
+if test -n "$compressed"; then
+    cmd="$LIBLINEAR_TRAIN"
+    num=$(($# - 1))
+    while test "$num" -gt 1; do
+	cmd="$cmd $1"
+	shift
+	num=$(($num-1))
+    done
+    tmp_dir=`mktemp -d "$TMPDIR"/linear-train.XXXXXX`
+    fifo_name="$tmp_dir/fifo"
+#    mkfifo "$fifo_name"
+    training_set="$1"
+    cmd="$cmd $fifo_name $2"
+    $GZIP_CMD -dc "$training_set.gz" > "$fifo_name" # &
+    eval "$cmd"
+else
+    $LIBLINEAR_TRAIN "$@"
+fi

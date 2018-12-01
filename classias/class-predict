@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (c) 2016 Aleksey Cheusov <vle@gmx.net>
+# Copyright (c) 2016-2018 Aleksey Cheusov <vle@gmx.net>
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -33,8 +33,10 @@ usage (){
 class-predict - wrapper over classias-tag(1)
 usage: class-train [OPTIONS] -- [CL_OPTIONS] testing_set_file model_file output_file
 OPTIONS:
-    -h     display this screen
-    -Z     read gzipped training set from <training_set_file>.gz
+    -h         display this screen
+    -Z         read gzipped training set from <training_set_file>.gz
+    -b num     1 -- probability score, 0 -- raw score.
+               Empty string (the default) -- no score on output.
 CL_OPTIONS:
     See $CLASSIAS_TAG options for details
 EOF
@@ -54,7 +56,8 @@ trap "sig_handler INT"  INT
 trap "on_exit" 0
 
 compressed=
-while getopts hZ f; do
+score=1
+while getopts b:hZ f; do
     case "$f" in
 	'?')
 	    usage
@@ -64,6 +67,8 @@ while getopts hZ f; do
 	    exit 0;;
 	Z)
 	    compressed=1;;
+	b)
+	    score=$OPTARG;;
     esac
 done
 shift `expr $OPTIND - 1`
@@ -84,11 +89,49 @@ split_args (){
     printf '%s\n' "$3"
 }
 
+convert () {
+    awk -F':' '
+$0 == "@boi" {
+    next
+}
+
+$0 == "@eoi" {
+    printf "%s %.8g", best, h[best]
+    for (k in h) {
+        if (k != best)
+            printf " %s %.8g", k, h[k]
+    }
+    printf "\n"
+    next
+}
+
+{
+    if ($1 ~ /^[+]/){
+        best = $1+0
+    }else{
+        $1 = -$1
+    }
+
+    h[$1+0] = $2
+}
+' "$@"
+}
+
 split_args "$@" | {
     read args
     read input
     read model
     read output
+
+    if test "$score" = 0; then
+	args="$args -wa"
+    elif test "$score" = 1; then
+	args="$args -pa"
+    else
+	convert() {
+	    cat
+	}
+    fi
 
     if test -n "$compressed"; then
 	tmp_dir=`mktemp -d "$TMPDIR"/class-predict.XXXXXX`
@@ -99,5 +142,5 @@ split_args "$@" | {
 	input="$fifo_name"
     fi
 
-    eval "classias-tag -m $model $args > $output < $input"
+    eval "classias-tag -m $model $args < $input" | convert > $output
 }

@@ -240,6 +240,9 @@ static void init_label_map(void)
 
 int main(int argc, char **argv)
 {
+	char msg[PATH_MAX + 100];
+	FILE *fd;
+	int i;
 	int seen = process_args(argc, argv);
 	argc -= seen;
 	argv += seen;
@@ -248,7 +251,21 @@ int main(int argc, char **argv)
 	init_label_map();
 	label_map_initializing = 0;
 
-	process_stream(stdin);
+	if (argc){
+		for (i=0; i < argc; ++i){
+			fd = fopen(argv[i], "rt");
+			if (fd == NULL){
+				snprintf(msg, sizeof(msg), "Cannot open file '%s'", argv[i]);
+				perror(msg);
+				exit(EXIT_FAILURE);
+			}
+
+			process_stream(fd);
+			fclose(fd);
+		}
+	}else{
+		process_stream(stdin);
+	}
 
 	return 0;
 }

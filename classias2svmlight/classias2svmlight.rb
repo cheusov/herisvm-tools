@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# Copyright (c) 2016 Aleksey Cheusov <vle@gmx.net>
+# Copyright (c) 2016-2018 Aleksey Cheusov <vle@gmx.net>
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -21,26 +21,65 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-class IdGenerator
-  def initialize
-    @new_features = {"-1" => -1, "1" => 1, "+1" => 1, "0" => 0}
-    @new_features_cnt = 1
+def number_or_nil(string)
+  num = string.to_i
+  if num.to_s == string
+    num
+  else
+    nil
   end
-  
+end
+
+class LabelIdGenerator
+  def initialize
+    @label_map = ENV["HSVM_LABEL_MAP"]
+    @new_features = {}
+
+    if @label_map != nil
+      @label_map.split(" ").each do |p|
+        pair = p.split(":")
+        num = number_or_nil(pair[1])
+        if num == nil
+          STDERR.puts("Incorrect numeric identifier within HSVM_LABEL_MAP environment variable")
+          exit 1
+        end
+        @new_features[pair[0]] = num
+      end
+    end
+  end
+
   def get_id(feature)
     if @new_features.has_key?(feature) then
-      @new_features [feature]
+      return @new_features [feature]
+    elsif @label_map == nil
+      @new_features [feature] = @new_features.size()
     else
-      @new_features_cnt += 1
-      @new_features [feature] = @new_features_cnt
+      STDERR.puts("Unknown label \'#{feature}\', set HSVM_LABEL_MAP environment variable properly")
+      exit 1
     end
   end
 
   attr_reader :new_features, :new_features_cnt
 end
 
-class_gen = IdGenerator.new
-feature_gen = IdGenerator.new
+class FeatureIdGenerator
+  def initialize
+    @new_features = {}
+  end
+
+  def get_id(feature)
+    if @new_features.has_key?(feature) then
+      @new_features [feature]
+    else
+      @new_features [feature] = @new_features.size() + 1
+    end
+  end
+
+  attr_reader :new_features, :new_features_cnt
+end
+
+class_gen = LabelIdGenerator.new
+feature_gen = FeatureIdGenerator.new
 
 #class_gen.get_id("1")
 #class_gen.get_id("-1")
@@ -69,7 +108,7 @@ while line = gets do
     if tokens[i].size == 1
       tokens[i] << 1
     else
-      tokens[i][1] = tokens[i][1].to_f
+      tokens[i][1] = tokens[i][1]
     end
   end
   tokens = tokens.sort_by {|v| v[0]}.uniq {|v| v[0]}.collect {|v| v[0].to_s + ":" + v[1].to_s}

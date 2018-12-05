@@ -7,6 +7,12 @@
 
 set -e
 
+opts=''
+while printf '%s\n' "$1" | grep -q '^-'; do
+    opts="$opts $1"
+    shift
+done
+
 test $# -eq 7
 
 train_cmd="$1-train"
@@ -18,9 +24,9 @@ output="$5"
 expected="$6"
 message="$7"
 
-echo "$message"
+echo "$message" 1>&2
 
-"$train_cmd" $TRAIN_CMD_OPTS "$training_set" "$model"
+"$train_cmd" $opts $TRAIN_CMD_OPTS "$training_set" "$model"
 "$predict_cmd" $PREDICT_CMD_OPTS "$testing_set" "$model" "$output"
 awk '{print $1}' "$output" > "$output.tmp"
 mv "$output.tmp" "$output"

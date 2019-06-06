@@ -32,6 +32,7 @@ static int compar(const void *a, const void *b)
 	return 0;
 }
 
+/*
 static uint64_t hash_func(const char *str, size_t str_len)
 {
 	uint64_t h  = 0;
@@ -39,13 +40,14 @@ static uint64_t hash_func(const char *str, size_t str_len)
 
 	for (i = 0; i < str_len; ++i) {
 		h += (uint8_t) str[i];
-		h *= 2654435789U;		/* prime near %$\frac{\sqrt{5}-1}{2}2^{32}$% */
+		h *= 2654435789U;		// prime near %$\frac{\sqrt{5}-1}{2}2^{32}$%
 	}
 
 	return h & 0xffffffff;
 }
+*/
 
-static int get_uniq_id(const char *str, size_t str_len, PPvoid_t hash, int *id)
+static int get_uniq_id(char *str, size_t str_len, PPvoid_t hash, int *id)
 {
 	PWord_t ret = (PWord_t) JudyHSIns(hash, (void *)str, str_len, NULL);
 //	PWord_t ret = (PWord_t) JudyLIns(hash, hash_func(str, str_len), NULL);

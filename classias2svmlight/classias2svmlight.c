@@ -173,7 +173,9 @@ classias2svmlight programs converts dataset in classias format\n\
    to svmlight format.\n\
 Usage: classias2svmlight [OPTIONS] [files...]\n\
 OPTIONS:\n\
-   -h      dislay this screen\
+   -h           display this screen\n\
+   -l <num>     numeric value for the first label (usually 0 or 1),\n\
+                the default values is 0\
 ");
 }
 
@@ -181,11 +183,14 @@ static int process_args(int argc, char **argv)
 {
 	int c;
 
-	while (c = getopt (argc, argv, "h"), c != EOF){
+	while (c = getopt (argc, argv, "hl:"), c != EOF){
 		switch (c){
 			case 'h':
 				usage();
 				exit(EXIT_SUCCESS);
+			case 'l':
+				label_id = atoi(optarg);
+				break;
 			default:
 				usage ();
 				exit (EXIT_FAILURE);

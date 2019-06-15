@@ -29,7 +29,7 @@ from svmlight_loader import load_svmlight_file
 from sklearn import ensemble
 
 def usage():
-    print('''scikit-train builds the model using sklearn.ensemble.RandomForestClassifier
+    print('''scikit_rf-train builds the model using sklearn.ensemble.RandomForestClassifier
 usage: scikit_rf-train [OPTIONS] <dataset> <model>
 OPTIONS:
 

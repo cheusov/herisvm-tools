@@ -21,15 +21,86 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import getopt
+import os
 import pickle
 import sys
-import os
 
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.datasets import load_svmlight_file
 from sklearn import svm
 
-X_train, y_train = load_svmlight_file(sys.argv [1])
+def usage():
+    print('''scikit-linear-train builds the model using sklearn.svm.LinearSVC
+usage: scikit_linear-train [OPTIONS] <dataset> <model>
+OPTIONS:
+
+   Most options below directly correspond to the arguments of
+   sklearn.svm.LinearSVC constructor. So, for
+   detailed information see scikit learn documentation.
+
+   -h   --help                     Display this screen.
+        --penalty <penalty>        Penalty, for example, 'l1' or 'l2'.
+        --loss <loss>              Loss function, for example, 'hinge' or
+                                   'squared_hinge'.
+        --primary <flag>           Select the algorithm to either solve
+                                   the primal or dual optimization problem.
+        --tol <tolerance>          Tolerance for stopping criteria.
+   -c   --C <constant>             Penalty parameter C of the error term.
+        --multi_class <class>      Multi-class strategy, for example,
+                                   'ovr' or 'crammer_singer'.
+        --fit_intercept <flag>     Whether to calculate the intercept
+                                   for this model.
+        --intercept_scaling <value> 
+        --class_weight <weight>    Class weight, e.g., "balanced".
+        --verbose <level>          Verbosity level.
+        --random_state <seed>      Initial random seed.
+        --max_iter <value>         The maximum number of iterations to be run.
+''')
+
+def str2bool(v):
+  return v.lower() in ("yes", "true", "y", "t", "1")
+
+kwargs_constructor = {}
+kwargs_fit = {}
+
+opts,args = getopt.getopt(sys.argv[1:], 'hc:',
+                          ['help', 'penalty=', 'loss=', 'primary=', 'tol=',
+                           'C=', 'multi_class=', 'fit_intercept=',
+                           'intercept_scaling=', 'class_weight=', 'verbose=',
+                           'random_state=', 'max_iter=']
+)
+
+for o,a in opts:
+    if o in ("-h", "--help", ):
+        usage()
+        sys.exit()
+    if o in ("--penalty", ):
+        kwargs_constructor["penalty"] = a
+    if o in ("--loss", ):
+        kwargs_constructor["loss"] = a
+    if o in ("--primary", ):
+        kwargs_constructor["dual"] = not str2bool(a)
+    if o in ("--tol", ):
+        kwargs_constructor["tol"] = float(a)
+    if o in ("-c", "--C"):
+        kwargs_constructor["C"] = float(a)
+    if o in ("--multi_class",):
+        kwargs_constructor["multi_class"] = a
+    if o in ("--fit_intercept",):
+        kwargs_constructor["fit_intercept"] = str2bool(a)
+    if o in ("--intercept_scaling",):
+        kwargs_constructor["intercept_scaling"] = float(a)
+    if o in ("--class_weight",):
+        kwargs_constructor["class_weight"] = a
+    if o in ("--verbose",):
+        kwargs_constructor["verbose"] = int(a)
+    if o in ("--random_state",):
+        kwargs_constructor["random_state"] = int(a)
+    if o in ("--max_iter",):
+        kwargs_constructor["max_iter"] = int(a)
+
+X_train, y_train = load_svmlight_file(args[0])
 #feature_count = os.getenv("HERISVM_FC")
 #sys.stderr.write("feature_count=" + str(feature_count) + "\n")
 #sys.stderr.write("train set feature_count=" + str(X_train.shape[1]) + "\n")
@@ -38,13 +109,10 @@ X_train, y_train = load_svmlight_file(sys.argv [1])
 #else:
 #    feature_count = X_train.shape[1]
 
-kwargs_constructor = {}
-kwargs_fit = {}
-
 clf = svm.LinearSVC(**kwargs_constructor)
 clf.fit(X_train, y_train, **kwargs_fit)
 
-with open(sys.argv [2], 'wb') as f:
+with open(args[1], 'wb') as f:
     pickle.dump(clf, f)
 #    pickle.dump(feature_count, f)
     pickle.dump(X_train.shape[1], f)

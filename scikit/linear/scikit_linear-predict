@@ -25,14 +25,16 @@ import numpy
 import pickle
 import sys
 
-from sklearn.datasets import load_svmlight_file
-from sklearn import svm
+#from sklearn.datasets import load_svmlight_file
+from svmlight_loader import load_svmlight_file
 
 with open(sys.argv [2], 'rb') as f:
     clf = pickle.load(f)
     n_features = pickle.load(f)
+#    n_features2 = pickle.load(f)
 
     X_test, y_test = load_svmlight_file(sys.argv [1], n_features)
+#    X_test = X_test[:, :n_features2]
 
 labels_count = clf.classes_.size
 

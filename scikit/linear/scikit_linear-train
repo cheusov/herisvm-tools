@@ -23,13 +23,28 @@
 
 import pickle
 import sys
+import os
 
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.datasets import load_svmlight_file
 from sklearn import svm
 
 X_train, y_train = load_svmlight_file(sys.argv [1])
-clf = svm.LinearSVC()
-clf.fit(X_train, y_train)
+#feature_count = os.getenv("HERISVM_FC")
+#sys.stderr.write("feature_count=" + str(feature_count) + "\n")
+#sys.stderr.write("train set feature_count=" + str(X_train.shape[1]) + "\n")
+#if feature_count != None:
+#    feature_count = int(feature_count)
+#else:
+#    feature_count = X_train.shape[1]
+
+kwargs_constructor = {}
+kwargs_fit = {}
+
+clf = svm.LinearSVC(**kwargs_constructor)
+clf.fit(X_train, y_train, **kwargs_fit)
+
 with open(sys.argv [2], 'wb') as f:
     pickle.dump(clf, f)
+#    pickle.dump(feature_count, f)
     pickle.dump(X_train.shape[1], f)

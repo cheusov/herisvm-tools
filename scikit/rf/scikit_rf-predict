@@ -25,7 +25,7 @@ import numpy
 import pickle
 import sys
 
-from sklearn.datasets import load_svmlight_file
+from svmlight_loader import load_svmlight_file
 from sklearn import ensemble
 
 with open(sys.argv [2], 'rb') as f:

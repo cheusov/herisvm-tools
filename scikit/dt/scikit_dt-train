@@ -25,7 +25,7 @@ import pickle
 import sys
 import getopt
 
-from sklearn.datasets import load_svmlight_file
+from svmlight_loader import load_svmlight_file
 from sklearn import tree
 
 def usage():

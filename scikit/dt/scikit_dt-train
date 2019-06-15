@@ -87,19 +87,8 @@ def string_to_value(s):
     else:
         return s
 
-arg_criterion="gini"
-arg_splitter="best"
-arg_max_depth=None
-arg_min_samples_split=2
-arg_min_samples_leaf=1
-arg_min_weight_fraction_leaf=0.0
-arg_max_features=None
-arg_random_state=None
-arg_max_leaf_nodes=None
-arg_min_impurity_decrease=0.0
-arg_min_impurity_split=None
-arg_class_weight=None
-arg_presort=False
+kwargs_constructor = {}
+kwargs_fit = {}
 
 opts,args = getopt.getopt(sys.argv[1:], 'h',
                           ['help', "criterion=", "splitter=", "max_depth=",
@@ -115,44 +104,35 @@ for o,a in opts:
         usage()
         sys.exit()
     if o in ("--criterion="):
-        arg_criterion = string_to_value(a)
+        kwargs_constructor['criterion'] = string_to_value(a)
     if o in ("--splitter="):
-        arg_splitter = string_to_value(a)
+        kwargs_constructor['splitter'] = string_to_value(a)
     if o in ("--max_depth="):
-        arg_max_depth = string_to_value(a)
+        kwargs_constructor['max_depth'] = string_to_value(a)
     if o in ("--min_samples_split="):
-        arg_min_samples_split = string_to_value(a)
+        kwargs_constructor['min_samples_split'] = string_to_value(a)
     if o in ("--min_samples_leaf="):
-        arg_min_samples_leaf = string_to_value(a)
+        kwargs_constructor['min_samples_leaf'] = string_to_value(a)
     if o in ("--min_weight_fraction_leaf="):
-        arg_min_weight_fraction_leaf = string_to_value(a)
+        kwargs_constructor['min_weight_fraction_leaf'] = string_to_value(a)
     if o in ("--max_features="):
-        arg_max_features = string_to_value(a)
+        kwargs_constructor['max_features'] = string_to_value(a)
     if o in ("--random_state="):
-        arg_random_state = string_to_value(a)
+        kwargs_constructor['random_state'] = string_to_value(a)
     if o in ("--max_leaf_nodes="):
-        arg_max_leaf_nodes = string_to_value(a)
+        kwargs_constructor['max_leaf_nodes'] = string_to_value(a)
     if o in ("--min_impurity_decrease="):
-        arg_min_impurity_decrease = string_to_value(a)
+        kwargs_constructor['min_impurity_decrease'] = string_to_value(a)
     if o in ("--min_impurity_split="):
-        arg_min_impurity_split = string_to_value(a)
+        kwargs_constructor['min_impurity_split'] = string_to_value(a)
     if o in ("--class_weight="):
-        arg_class_weight = string_to_value(a)
+        kwargs_constructor['class_weight'] = string_to_value(a)
     if o in ("--presort"):
-        arg_presort = True
+        kwargs_constructor['presort'] = True
 
 X_train, y_train = load_svmlight_file(args[0])
 
-clf = tree.DecisionTreeClassifier(\
-    criterion=arg_criterion, splitter=arg_splitter, max_depth=arg_max_depth, \
-    min_samples_split=arg_min_samples_split, min_samples_leaf=arg_min_samples_leaf, \
-    min_weight_fraction_leaf=arg_min_weight_fraction_leaf, max_features=arg_max_features, \
-    random_state=arg_random_state, max_leaf_nodes=arg_max_leaf_nodes, \
-    class_weight=arg_class_weight
-#    min_impurity_decrease=arg_min_impurity_decrease,
-#    min_impurity_split=arg_min_impurity_split,
-#    presort=arg_presort
-)
+clf = tree.DecisionTreeClassifier(**kwargs_constructor)
 
 clf.fit(X_train, y_train)
 

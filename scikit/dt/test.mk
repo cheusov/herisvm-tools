@@ -1,11 +1,13 @@
 ds = ${SRCDIR_datasets}
 model = ${.OBJDIR}/model.model
 output = ${.OBJDIR}/output.txt
+libsvm_dataset = libsvm_dataset
 
 test: all
 	@set -e; \
 	\
-	export PATH=`pwd`:${.OBJDIR}:$$PATH; \
+	export PATH=${SRCDIR_classias2svmlight}:$$PATH; \
+	export PATH=${.CURDIR}:${.OBJDIR}:$$PATH; \
 	../../helpers/run_test scikit_dt \
 	    ${ds}/tiny_train.libsvm ${ds}/tiny_predict.libsvm \
 	    ${model:Q} ${output:Q} \
@@ -28,6 +30,32 @@ test: all
 	    ${ds}/tiny_train2.libsvm ${ds}/tiny_predict.libsvm \
 	    ${model:Q} ${output:Q} \
 	    'Test #2.2' expect2.out; \
+	echo '      succeeded'; \
+	\
+	classias2svmlight ${ds}/dataset.classias > ${libsvm_dataset}; \
+	\
+	echo 'Test #3.1' 1>&2; \
+	export SVM_TRAIN_CMD='scikit_dt-train --random_state 2 --max_depth 10 --criterion gini'; \
+	export SVM_PREDICT_CMD='scikit_dt-predict'; \
+	heri-eval -e ${libsvm_dataset} ${libsvm_dataset} > ${output:Q}; \
+	a=`../../helpers/get_accuracy ${output:Q}`; \
+	../../helpers/cmp_accuracy $$a 0.25; \
+	echo '      succeeded'; \
+	\
+	echo 'Test #3.2' 1>&2; \
+	export SVM_TRAIN_CMD='scikit_dt-train --random_state 2 --criterion entropy'; \
+	export SVM_PREDICT_CMD='scikit_dt-predict'; \
+	heri-eval -e ${libsvm_dataset} ${libsvm_dataset} > ${output:Q}; \
+	a=`../../helpers/get_accuracy ${output:Q}`; \
+	../../helpers/cmp_accuracy $$a 0.25; \
+	echo '      succeeded'; \
+	\
+	echo 'Test #3.3' 1>&2; \
+	export SVM_TRAIN_CMD='scikit_dt-train --random_state 2'; \
+	export SVM_PREDICT_CMD='scikit_dt-predict'; \
+	heri-eval -e ${libsvm_dataset} ${libsvm_dataset} > ${output:Q}; \
+	a=`../../helpers/get_accuracy ${output:Q}`; \
+	../../helpers/cmp_accuracy $$a 0.25; \
 	echo '      succeeded'
 
-CLEANFILES +=	${model} ${output}
+CLEANFILES +=	${model} ${output} ${libsvm_dataset}

@@ -4,7 +4,7 @@ output = ${.OBJDIR}/output.txt
 
 test: all
 	@set -e; \
-	export TRAIN_CMD_OPTS='-q'; \
+	export TRAIN_CMD_OPTS='-- -q'; \
 	export PREDICT_CMD_OPTS='-q'; \
 	\
 	export PATH=`pwd`:$$PATH; \

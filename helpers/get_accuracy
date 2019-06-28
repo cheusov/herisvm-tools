@@ -1,0 +1,5 @@
+#!/usr/bin/env runawk
+
+$1 == "Accuracy" {
+	print $3
+}

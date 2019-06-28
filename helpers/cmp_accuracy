@@ -1,0 +1,12 @@
+#!/usr/bin/env runawk
+
+BEGIN {
+	output   = ARGV[1]+0
+	expected = ARGV[2]+0
+	if (output > expected){
+		exit(0)
+	}else{
+		printf "Expected accuracy is %s but %s is given\n", expected, output > "/dev/stderr"
+		exit(1)
+	}
+}

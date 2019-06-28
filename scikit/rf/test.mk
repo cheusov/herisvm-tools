@@ -7,6 +7,7 @@ test: all
 	@set -e; \
 	\
 	export PATH=${SRCDIR_classias2svmlight}:$$PATH; \
+	export PATH=${SRCDIR_predict}:${OBJDIR_predict}:$$PATH; \
 	export PATH=${.CURDIR}:${.OBJDIR}:$$PATH; \
 	../../helpers/run_test scikit_rf \
 	    ${ds}/tiny_train.libsvm ${ds}/tiny_predict.libsvm \

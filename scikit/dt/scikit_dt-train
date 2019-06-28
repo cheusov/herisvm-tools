@@ -72,6 +72,7 @@ OPTIONS:
         --presort                      Enable presorting the data
                                        to speed up the finding of best
                                        splits in fitting (default: disabled).
+        --extra <name=value>           extra parameter to classifier constructor.
 ''')
 
 def string_to_value(s):
@@ -96,7 +97,7 @@ opts,args = getopt.getopt(sys.argv[1:], 'h',
                            "min_weight_fraction_leaf=", "max_features=",
                            "random_state=", "max_leaf_nodes=",
                            "min_impurity_decrease=", "min_impurity_split=",
-                           "class_weight=", "presort" ]
+                           "class_weight=", "presort", "extra="]
 )
 
 for o,a in opts:
@@ -129,6 +130,9 @@ for o,a in opts:
         kwargs_constructor['class_weight'] = string_to_value(a)
     if o in ("--presort"):
         kwargs_constructor['presort'] = True
+    if o in ("--extra"):
+        sep = a.find("=")
+        kwargs_constructor[a[:sep]] = string_to_value(a[sep+1:])
 
 X_train, y_train = load_svmlight_file(args[0])
 

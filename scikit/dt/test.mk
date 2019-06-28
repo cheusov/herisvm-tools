@@ -52,7 +52,7 @@ test: all
 	echo '      succeeded'; \
 	\
 	echo 'Test #3.3' 1>&2; \
-	export SVM_TRAIN_CMD='scikit_dt-train --random_state 2'; \
+	export SVM_TRAIN_CMD='scikit_dt-train --random_state 2 --extra max_leaf_nodes=500'; \
 	export SVM_PREDICT_CMD='scikit-predict'; \
 	heri-eval -e ${libsvm_dataset} ${libsvm_dataset} > ${output:Q}; \
 	a=`../../helpers/get_accuracy ${output:Q}`; \

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # usage:
-#   run_test <commands_prefix> <training_set> <testing_set> <model> <output> <expected> <progress_message>
+#   run_test <commands_prefix> <training_set> <testing_set> <model> <output> <progress_message> <expected>
 
 : ${DIFF_CMD:=diff -u}
 
@@ -21,8 +21,8 @@ training_set="$2"
 testing_set="$3"
 model="$4"
 output="$5"
-expected="$6"
-message="$7"
+message="$6"
+expected="$7"
 
 echo "$message" 1>&2
 
@@ -30,4 +30,6 @@ echo "$message" 1>&2
 "$predict_cmd" $PREDICT_CMD_OPTS "$testing_set" "$model" "$output"
 awk '{print $1}' "$output" > "$output.tmp"
 mv "$output.tmp" "$output"
-$DIFF_CMD "$expected" "$output"
+if test -n "$expected"; then
+    $DIFF_CMD "$expected" "$output"
+fi

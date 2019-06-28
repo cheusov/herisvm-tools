@@ -10,8 +10,8 @@ test: all
 	export PATH=`pwd`:$$PATH; \
 	../helpers/run_test linear \
 	    ${ds}/tiny_train.libsvm ${ds}/tiny_predict.libsvm \
-	    ${model:Q} ${output:Q} expect1.out \
-	    'Test #1'; \
+	    ${model:Q} ${output:Q} \
+	    'Test #1' expect1.out; \
 	echo '      succeeded'; \
 	\
 	../helpers/run_test linear \

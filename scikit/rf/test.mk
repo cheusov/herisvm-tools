@@ -8,14 +8,14 @@ test: all
 	export PATH=`pwd`:$$PATH; \
 	../../helpers/run_test scikit_rf \
 	    ${ds}/tiny_train.libsvm ${ds}/tiny_predict.libsvm \
-	    ${model:Q} ${output:Q} expect1.out \
-	    'Test #1'; \
+	    ${model:Q} ${output:Q} \
+	    'Test #1' expect1.out; \
 	echo '      succeeded'; \
 	\
 	../../helpers/run_test scikit_rf \
 	    ${ds}/tiny_train2.libsvm ${ds}/tiny_predict.libsvm \
-	    ${model:Q} ${output:Q} expect2.out \
-	    'Test #2'; \
+	    ${model:Q} ${output:Q} \
+	    'Test #2' expect2.out; \
 	echo '      succeeded'
 
 CLEANFILES +=	${model} ${output}

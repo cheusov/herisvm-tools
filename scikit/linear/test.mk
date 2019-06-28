@@ -24,7 +24,7 @@ test: all
 	\
 	echo 'Test #3.1' 1>&2; \
 	export SVM_TRAIN_CMD='scikit_linear-train --random_state 2 -c 1 --loss hinge --penalty l2 --multi_class ovr'; \
-	export SVM_PREDICT_CMD='scikit_linear-predict'; \
+	export SVM_PREDICT_CMD='scikit-predict'; \
 	heri-eval -e ${libsvm_dataset} ${libsvm_dataset} > ${output:Q}; \
 	a=`../../helpers/get_accuracy ${output:Q}`; \
 	../../helpers/cmp_accuracy $$a 0.25; \
@@ -32,7 +32,7 @@ test: all
 	\
 	echo 'Test #3.2' 1>&2; \
 	export SVM_TRAIN_CMD='scikit_linear-train --random_state 2'; \
-	export SVM_PREDICT_CMD='scikit_linear-predict'; \
+	export SVM_PREDICT_CMD='scikit-predict'; \
 	heri-eval -e ${libsvm_dataset} ${libsvm_dataset} > ${output:Q}; \
 	a=`../../helpers/get_accuracy ${output:Q}`; \
 	../../helpers/cmp_accuracy $$a 0.25; \
@@ -40,7 +40,7 @@ test: all
 	\
 	echo 'Test #3.3' 1>&2; \
 	export SVM_TRAIN_CMD='scikit_linear-train --random_state 2 --max_iter 10000'; \
-	export SVM_PREDICT_CMD='scikit_linear-predict'; \
+	export SVM_PREDICT_CMD='scikit-predict'; \
 	heri-eval -e ${libsvm_dataset} ${libsvm_dataset} > ${output:Q}; \
 	a=`../../helpers/get_accuracy ${output:Q}`; \
 	../../helpers/cmp_accuracy $$a 0.25; \

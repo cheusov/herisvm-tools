@@ -16,7 +16,7 @@ done
 test $# -eq 7
 
 train_cmd="$1-train"
-predict_cmd="$1-predict"
+predict_cmd=`echo $1-predict | sed 's/scikit_[^-]*/scikit/'`
 training_set="$2"
 testing_set="$3"
 model="$4"

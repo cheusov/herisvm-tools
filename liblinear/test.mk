@@ -9,8 +9,6 @@ test: all
 	export PREDICT_CMD_OPTS='-q'; \
 	export PATH=${SRCDIR_classias2svmlight}:$$PATH; \
 	export PATH=${.CURDIR}:${.OBJDIR}:$$PATH; \
-	export SVM_TRAIN_CMD='linear-train -- -q -s 0'; \
-	export SVM_PREDICT_CMD='linear-predict -q -b 1'; \
 	\
 	export PATH=`pwd`:$$PATH; \
 	../helpers/run_test linear \
@@ -26,7 +24,26 @@ test: all
 	echo '      succeeded'; \
 	\
 	classias2svmlight ${ds}/dataset.classias > ${libsvm_dataset}; \
-	echo 'Test #3' 1>&2; \
+	\
+	echo 'Test #3.1' 1>&2; \
+	export SVM_TRAIN_CMD='linear-train -- -q -s 0'; \
+	export SVM_PREDICT_CMD='linear-predict -q -b 1'; \
+	heri-eval -e ${libsvm_dataset} ${libsvm_dataset} > ${output:Q}; \
+	a=`../helpers/get_accuracy ${output:Q}`; \
+	../helpers/cmp_accuracy $$a 0.5; \
+	echo '      succeeded'; \
+	\
+	echo 'Test #3.2' 1>&2; \
+	export SVM_TRAIN_CMD='linear-train -- -q'; \
+	export SVM_PREDICT_CMD='linear-predict -q'; \
+	heri-eval -e ${libsvm_dataset} ${libsvm_dataset} > ${output:Q}; \
+	a=`../helpers/get_accuracy ${output:Q}`; \
+	../helpers/cmp_accuracy $$a 0.5; \
+	echo '      succeeded'; \
+	\
+	echo 'Test #3.3' 1>&2; \
+	export SVM_TRAIN_CMD='linear-train -- -q -s 6 -c 1'; \
+	export SVM_PREDICT_CMD='linear-predict -q -b 1'; \
 	heri-eval -e ${libsvm_dataset} ${libsvm_dataset} > ${output:Q}; \
 	a=`../helpers/get_accuracy ${output:Q}`; \
 	../helpers/cmp_accuracy $$a 0.5; \

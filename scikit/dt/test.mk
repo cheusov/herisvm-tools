@@ -56,6 +56,16 @@ test: all
 	heri-eval -e ${libsvm_dataset} ${libsvm_dataset} > ${output:Q}; \
 	a=`../../helpers/get_accuracy ${output:Q}`; \
 	../../helpers/cmp_accuracy $$a 0.25; \
+	echo '      succeeded'; \
+	\
+	echo 'Test #4.1' 1>&2; \
+	scikit_dt-predict -h 2>${output:Q}; \
+	test -s "${output:Q}"; \
+	echo '      succeeded'; \
+	\
+	echo 'Test #4.2' 1>&2; \
+	scikit_dt-predict -h 2>${output:Q}; \
+	test -s "${output:Q}"; \
 	echo '      succeeded'
 
 CLEANFILES +=	${model} ${output} ${libsvm_dataset}

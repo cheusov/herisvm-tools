@@ -21,21 +21,38 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import getopt
 import numpy
 import pickle
 import sys
 
 from svmlight_loader import load_svmlight_file
 
-with open(sys.argv [2], 'rb') as f:
+def usage():
+    sys.stderr.write('''scikit_dt-predict predicts class labels using model
+   built by scikit_dt-train
+usage: scikit_dt-predict [OPTIONS] <testing_set_file> <model_file> <output_file>
+OPTIONS:
+
+   -h   --help                     Display this screen.
+
+''')
+
+opts,args = getopt.getopt(sys.argv[1:], 'h', ['help'])
+for o,a in opts:
+    if o in ("-h", "--help", ):
+        usage()
+        sys.exit()
+
+with open(args[1], 'rb') as f:
     clf = pickle.load(f)
     n_features = pickle.load(f)
 
-    X_test, y_test = load_svmlight_file(sys.argv [1], n_features)
+    X_test, y_test = load_svmlight_file(args[0], n_features)
 
 labels_count = clf.classes_.size
 
-with open(sys.argv [3], 'w') as output:
+with open(args[2], 'w') as output:
     for i in range(0, X_test.shape[0]):
         results = clf.predict_proba(X_test[i])[0]
         max_index = numpy.argmax(results)

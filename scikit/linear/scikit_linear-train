@@ -31,7 +31,7 @@ from sklearn import svm
 from svmlight_loader import load_svmlight_file
 
 def usage():
-    print('''scikit-linear-train builds the model using sklearn.svm.LinearSVC
+    print('''scikit_linear-train builds the model using sklearn.svm.LinearSVC
 usage: scikit_linear-train [OPTIONS] <dataset> <model>
 OPTIONS:
 

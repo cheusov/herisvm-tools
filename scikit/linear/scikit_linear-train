@@ -56,7 +56,21 @@ OPTIONS:
         --verbose <level>          Verbosity level.
         --random_state <seed>      Initial random seed.
         --max_iter <value>         The maximum number of iterations to be run.
+        --extra <name=value>       Extra parameter to classifier constructor.
 ''')
+
+def string_to_value(s):
+    if s == "None":
+        return None
+    elif s == "":
+        return ""
+    elif s[0].isdigit():
+        try:
+            return int(s)
+        except:
+            return float(s)
+    else:
+        return s
 
 def str2bool(v):
   return v.lower() in ("yes", "true", "y", "t", "1")
@@ -68,7 +82,7 @@ opts,args = getopt.getopt(sys.argv[1:], 'hc:',
                           ['help', 'penalty=', 'loss=', 'primary=', 'tol=',
                            'C=', 'multi_class=', 'fit_intercept=',
                            'intercept_scaling=', 'class_weight=', 'verbose=',
-                           'random_state=', 'max_iter=']
+                           'random_state=', 'max_iter=', "extra="]
 )
 
 for o,a in opts:
@@ -99,6 +113,9 @@ for o,a in opts:
         kwargs_constructor["random_state"] = int(a)
     if o in ("--max_iter",):
         kwargs_constructor["max_iter"] = int(a)
+    if o in ("--extra"):
+        sep = a.find("=")
+        kwargs_constructor[a[:sep]] = string_to_value(a[sep+1:])
 
 X_train, y_train = load_svmlight_file(args[0])
 #feature_count = os.getenv("HERISVM_FC")

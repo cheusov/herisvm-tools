@@ -114,4 +114,4 @@ test: all
 	echo '      succeeded'
 
 
-CLEANFILES +=	${output} ${output}.fmap ${output}.lmap
+CLEANFILES +=	${output} ${output}.fmap ${output}.lmap class2id.txt token2id.txt

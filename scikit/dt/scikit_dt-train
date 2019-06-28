@@ -134,7 +134,7 @@ X_train, y_train = load_svmlight_file(args[0])
 
 clf = tree.DecisionTreeClassifier(**kwargs_constructor)
 
-clf.fit(X_train, y_train)
+clf.fit(X_train, y_train, **kwargs_fit)
 
 with open(args[1], 'wb') as f:
     pickle.dump(clf, f)

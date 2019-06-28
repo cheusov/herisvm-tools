@@ -85,23 +85,8 @@ def coerce(x):
 def str2bool(v):
   return v.lower() in ("yes", "true", "y", "t", "1")
 
-# defaults
-estimators = 10
-criterion='gini'
-max_features='auto'
-max_depth=None
-min_samples_split=2
-min_samples_leaf=1
-min_weight_fraction_leaf=0
-max_leaf_nodes=None
-min_impurity_split=1e-7
-bootstrap=True
-oob_score=False
-jobs=1
-random_state = None
-verbose=0
-warm_start=False
-class_weight=None
+kwargs_constructor = {}
+kwargs_fit = {}
 
 #
 opts,args = getopt.getopt(sys.argv[1:], 'h',
@@ -118,64 +103,57 @@ for o,a in opts:
         usage()
         sys.exit()
     if o in ("--estimators", ):
-        estimators = int(a)
+        kwargs_constructor['estimators'] = int(a)
     if o in ("--criterion", ):
-        criterion = a
+        kwargs_constructor['criterion'] = a
     if o in ("--max_features", ):
-        max_features = a
+        kwargs_constructor['max_features'] = a
         if a in ('auto', 'sqrt', 'log2'):
             pass
         elif a == 'None':
-            max_features = None
+            kwargs_constructor['max_features'] = None
         else:
-            max_features = coerce(a)
+            kwargs_constructor['max_features'] = coerce(a)
     if o in ("--max_depth", ):
-        max_depth = a
+        kwargs_constructor['max_depth'] = a
         if a == 'None':
-            max_depth = None
+            kwargs_constructor['max_depth'] = None
         else:
-            max_depth = int(a)
+            kwargs_constructor['max_depth'] = int(a)
     if o in ("--min_samples_split", ):
-        min_samples_split = coerce(a)
+        kwargs_constructor['min_samples_split'] = coerce(a)
     if o in ("--min_samples_leaf", ):
-        min_samples_leaf = coerce(a)
+        kwargs_constructor['min_samples_leaf'] = coerce(a)
     if o in ("--min_weight_fraction_leaf", ):
-        min_weight_fraction_leaf = float(a)
+        kwargs_constructor['min_weight_fraction_leaf'] = float(a)
     if o in ("--max_leaf_nodes", ):
         if a == 'None':
-            max_leaf_nodes = None
+            kwargs_constructor['max_leaf_nodes'] = None
         else:
-            max_leaf_nodes = int(a)
+            kwargs_constructor['max_leaf_nodes'] = int(a)
     if o in ("--min_impurity_split", ):
-        min_impurity_split = float(a)
+        kwargs_constructor['min_impurity_split'] = float(a)
     if o in ("--bootstrap", ):
-        bootstrap = str2bool(a)
+        kwargs_constructor['bootstrap'] = str2bool(a)
     if o in ("--oob_score", ):
-        oob_score = str2bool(a)
+        kwargs_constructor['oob_score'] = str2bool(a)
     if o in ("--jobs", ):
-        jobs = int(a)
+        kwargs_constructor['jobs'] = int(a)
     if o in ("--random_state", ):
         if a == 'None':
-            random_state = None
+            kwargs_constructor['random_state'] = None
         else:
-            random_state = int(a)
+            kwargs_constructor['random_state'] = int(a)
     if o in ("--verbose", ):
-        verbose = int(a)
+        kwargs_constructor['verbose'] = int(a)
     if o in ("--warm_start", ):
-        warm_start = str2bool(a)
+        kwargs_constructor['warm_start'] = str2bool(a)
 
 X_train, y_train = load_svmlight_file(args[0])
 
-clf = ensemble.RandomForestClassifier(
-    n_estimators=estimators, criterion=criterion, max_features=max_features,
-    max_depth=max_depth, min_samples_split=min_samples_split,
-    min_samples_leaf=min_samples_leaf,
-    min_weight_fraction_leaf=min_weight_fraction_leaf,
-    max_leaf_nodes=max_leaf_nodes, #min_impurity_split=min_impurity_split,
-    bootstrap=bootstrap, oob_score=oob_score, n_jobs=jobs, random_state=random_state,
-    verbose=verbose, warm_start=warm_start, class_weight=class_weight)
+clf = ensemble.RandomForestClassifier(**kwargs_constructor)
 
-clf.fit(X_train, y_train)
+clf.fit(X_train, y_train, **kwargs_fit)
 with open(args[1], 'wb') as f:
     pickle.dump(clf, f)
     pickle.dump(X_train.shape[1], f)

@@ -24,7 +24,7 @@ test: all
 	classias2svmlight ${ds}/dataset.classias > ${libsvm_dataset}; \
 	\
 	echo 'Test #3.1' 1>&2; \
-	export SVM_TRAIN_CMD='scikit_rf-train --random_state 2 --max_depth 40 --criterion gini'; \
+	export SVM_TRAIN_CMD='scikit_rf-train --random_state 2 --max_depth 40 --criterion gini --extra n_estimators=180'; \
 	export SVM_PREDICT_CMD='scikit-predict'; \
 	heri-eval -e ${libsvm_dataset} ${libsvm_dataset} > ${output:Q}; \
 	a=`../../helpers/get_accuracy ${output:Q}`; \
@@ -40,7 +40,7 @@ test: all
 	echo '      succeeded'; \
 	\
 	echo 'Test #3.3' 1>&2; \
-	export SVM_TRAIN_CMD='scikit_rf-train --random_state 2'; \
+	export SVM_TRAIN_CMD='scikit_rf-train --extra random_state=2232'; \
 	export SVM_PREDICT_CMD='scikit-predict'; \
 	heri-eval -e ${libsvm_dataset} ${libsvm_dataset} > ${output:Q}; \
 	a=`../../helpers/get_accuracy ${output:Q}`; \

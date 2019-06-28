@@ -74,7 +74,21 @@ OPTIONS:
                                    estimators to the ensemble, otherwise, just
                                    fit a whole new forest (default: False).
         --class_weight <weights>   Ignored (default: None).
+        --extra <name=value>       Extra parameter to classifier constructor.
 ''')
+
+def string_to_value(s):
+    if s == "None":
+        return None
+    elif s == "":
+        return ""
+    elif s[0].isdigit():
+        try:
+            return int(s)
+        except:
+            return float(s)
+    else:
+        return s
 
 def coerce(x):
     try:
@@ -95,7 +109,7 @@ opts,args = getopt.getopt(sys.argv[1:], 'h',
                            'min_samples_leaf=', 'min_weight_fraction_leaf=',
                            'max_leaf_nodes=', 'min_impurity_split=',
                            'bootstrap=', 'oob_score=', 'jobs=', 'random_state=',
-                           'verbose=', 'warm_start=', 'class_weight=']
+                           'verbose=', 'warm_start=', 'class_weight=', "extra="]
 )
 
 for o,a in opts:
@@ -148,6 +162,9 @@ for o,a in opts:
         kwargs_constructor['verbose'] = int(a)
     if o in ("--warm_start", ):
         kwargs_constructor['warm_start'] = str2bool(a)
+    if o in ("--extra"):
+        sep = a.find("=")
+        kwargs_constructor[a[:sep]] = string_to_value(a[sep+1:])
 
 X_train, y_train = load_svmlight_file(args[0])
 

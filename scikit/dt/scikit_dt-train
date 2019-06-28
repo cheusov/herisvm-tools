@@ -72,7 +72,7 @@ OPTIONS:
         --presort                      Enable presorting the data
                                        to speed up the finding of best
                                        splits in fitting (default: disabled).
-        --extra <name=value>           extra parameter to classifier constructor.
+        --extra <name=value>           Extra parameter to classifier constructor.
 ''')
 
 def string_to_value(s):

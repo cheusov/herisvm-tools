@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+
+from collections import defaultdict
+import json
+import numpy as np
+import re
+
+grams = [1, 2]
+
+def tokenize(sentence, grams):
+    words = sentence.split()
+    tokens = []
+    for gram in grams:
+        for i in range(len(words) - gram + 1):
+            tokens += ["_*_".join(words[i:i+gram])]
+    return tokens
+
+counters = defaultdict(lambda: defaultdict(lambda: 0))
+token2index = None
+r = None
+
+def process_fd(label, fd):
+    global counters
+
+    for line in fd:
+        line = line.strip().lower()
+        line = re.sub("\s+", " ", line)
+        if line == "":
+            continue
+
+        tokens = tokenize(line, grams)
+        for token in tokens:
+            counters[label][token] += 1
+
+def process_file(label, filename):
+    with open(filename, "r") as fd:
+        process_fd(label, fd)
+
+def process_dataset_fd(fd):
+    for line in fd:
+        line = line.strip()
+
+        space_idx = line.find("\t")
+        if space_idx == -1:
+            raise Exception("Incorrect dataset line '%s'" %line)
+
+        label = line[:space_idx]
+        filename = line[space_idx+1:]
+
+        process_file(label, filename)
+
+def process_dataset_file(filename):
+    with open(filename, "r") as fd:
+        process_dataset_fd(fd)
+
+def compute_ratio(alpha=1):
+    global counters
+
+    alltokens = set(counters["1"].keys())
+    alltokens |= set(counters["-1"].keys())
+    token2index = dict((t, i) for i, t in enumerate(alltokens))
+    token_count = len(token2index)
+    p = np.ones(token_count) * alpha
+    q = np.ones(token_count) * alpha
+    for t in alltokens:
+        token_index = token2index[t]
+        p[token_index] += counters["1"][t]
+        q[token_index] += counters["-1"][t]
+    p /= p.sum()
+    q /= q.sum()
+    r = np.log(p/q)
+    return token2index, r
+
+def gen_libsvm_fd(fd, label, ofd):
+    for line in fd:
+        line = line.strip().lower()
+        line = re.sub("\s+", " ", line)
+        if line == "":
+            continue
+
+        tokens = tokenize(line, grams)
+        features = {}
+        for token in tokens:
+            token_index = token2index.get(token, -1)
+            if token_index < 0:
+                continue
+            features[token_index] = r[token_index]
+        features = list(features.items())
+        features.sort()
+        features_str = " ".join([str(x[0]+1) + ":" + str(x[1]) for x in features])
+        ofd.write(label + " " + features_str + "\n")
+
+def gen_libsvm_dataset_fd(fd, ofd):
+    for line in fd:
+        line = line.strip()
+
+        space_idx = line.find("\t")
+        if space_idx == -1:
+            raise Exception("Incorrect dataset line '%s'" %line)
+
+        label = line[:space_idx]
+        filename = line[space_idx+1:]
+
+        read_and_process(filename, gen_libsvm_fd, label=label, ofd=ofd)
+
+def read_and_process(filename, process_func, **kwargs):
+    with open(filename, "r") as ifd:
+        return process_func(ifd, **kwargs)
+
+train_file = "/home/cheusov/oss-prjs/nbsvm_run/data/train_files.txt"
+test_file = "/home/cheusov/oss-prjs/nbsvm_run/data/test_files.txt"
+
+process_dataset_file(train_file)
+token2index, r = compute_ratio()
+
+with open("train.libsvm", "w") as ofd:
+    read_and_process(train_file, gen_libsvm_dataset_fd, ofd=ofd)
+with open("test.libsvm", "w") as ofd:
+    read_and_process(test_file, gen_libsvm_dataset_fd, ofd=ofd)

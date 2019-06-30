@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (c) 2016-2018 Aleksey Cheusov <vle@gmx.net>
+# Copyright (c) 2016-2019 Aleksey Cheusov <vle@gmx.net>
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -81,9 +81,10 @@ if test -n "$compressed"; then
 #    mkfifo "$fifo_name" # unfortunately liblinear-train does not work with FIFO
     training_set="$1"
     cmd="$cmd $fifo_name $2"
-    $GZIP_CMD -dc "$training_set.gz" > "$fifo_name" # &
+    $GZIP_CMD -dc "$training_set.gz" > "$fifo_name"
+    set +e
     eval "$cmd"
-    wait
 else
+    set +e
     $LIBLINEAR_TRAIN "$@"
 fi

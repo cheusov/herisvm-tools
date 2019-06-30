@@ -1,4 +1,5 @@
-SCRIPTS = scikit_rf-predict scikit_rf-train
+SCRIPTS  =	scikit_rf-train
+SYMLINKS =	scikit-predict ${BINDIR}/scikit_rf-predict
 
 .include "test.mk"
 .include <mkc.mk>

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <maa.h>
 #include <Judy.h>
 
 static Pvoid_t features_hash = NULL;
@@ -20,8 +21,14 @@ static feature_t *features = NULL;
 static int features_count = 0;
 static int features_array_size = 0;
 
-static char * label_map = NULL;
+static char *label_map = NULL;
 static int label_map_initializing = 1;
+
+static char *feature_map_filename = NULL;
+static char *label_map_filename = NULL;
+
+static lst_List feature_names = NULL;
+static lst_List label_names = NULL;
 
 static int compar(const void *a, const void *b)
 {
@@ -61,6 +68,12 @@ static int get_uniq_id(char *str, size_t str_len, PPvoid_t hash, int *id)
 	if (*ret == 0){
 		*id += 1;
 		*ret = *id;
+
+		if (feature_names != NULL && hash == &features_hash){
+			lst_append(feature_names, xstrdup(str));
+		} else if (label_names != NULL && hash == &labels_hash){
+			lst_append(label_names, xstrdup(str));
+		}
 
 		if (label_map != NULL && !label_map_initializing && hash == &labels_hash){
 			fprintf(stderr, "Unknown label '%s', set HSVM_LABEL_MAP environment variable properly\n", strndup(str, str_len));
@@ -173,9 +186,13 @@ classias2svmlight programs converts dataset in classias format\n\
    to svmlight format.\n\
 Usage: classias2svmlight [OPTIONS] [files...]\n\
 OPTIONS:\n\
-   -h           display this screen\n\
-   -l <num>     numeric value for the first label (usually 0 or 1),\n\
-                the default values is 0\
+   -h               display this screen\n\
+   -l <num>         numeric value for the first label (usually 0 or 1),\n\
+                    the default values is 0\n\
+   -F <filename>    set the filename where to store\n\
+                    feature name to integer map\n\
+   -L <filename>    set the filename where to store\n\
+                    label to integer map\n\
 ");
 }
 
@@ -183,13 +200,19 @@ static int process_args(int argc, char **argv)
 {
 	int c;
 
-	while (c = getopt (argc, argv, "hl:"), c != EOF){
+	while (c = getopt (argc, argv, "hl:F:L:"), c != EOF){
 		switch (c){
 			case 'h':
 				usage();
 				exit(EXIT_SUCCESS);
 			case 'l':
 				label_id = atoi(optarg);
+				break;
+			case 'F':
+				feature_map_filename = xstrdup(optarg);
+				break;
+			case 'L':
+				label_map_filename = xstrdup(optarg);
 				break;
 			default:
 				usage ();
@@ -245,6 +268,52 @@ static void init_label_map(void)
 	}
 }
 
+static void save_map(char *filename, Pvoid_t *hash, lst_List names, int real_id_offset)
+{
+	lst_Position p;
+	char *name;
+	FILE *fd;
+	int ret;
+
+	if (!names)
+		return;
+
+	fd = fopen(filename, "w");
+	if (fd == NULL){
+		perror("fopen(3) failed:");
+		exit(1);
+	}
+
+	LST_ITERATE(names, p, name) {
+		int id = get_uniq_id(name, strlen(name), hash, NULL);
+		ret = fprintf(fd, "%s %d\n", name, id + real_id_offset);
+		if (!ret){
+			perror("fprintf(3) failed:");
+			exit(1);
+		}
+	}
+
+	ret = fclose(fd);
+	if (ret){
+		perror("fclose(3) failed:");
+		exit(1);
+	}
+}
+
+static void save_maps(void)
+{
+	save_map(feature_map_filename, &features_hash, feature_names, 1);
+	save_map(label_map_filename, &labels_hash, label_names, 0);
+}
+
+static void init(void)
+{
+	if (feature_map_filename)
+		feature_names = lst_create();
+	if (label_map_filename)
+		label_names = lst_create();
+}
+
 int main(int argc, char **argv)
 {
 	char msg[PATH_MAX + 100];
@@ -253,6 +322,8 @@ int main(int argc, char **argv)
 	int seen = process_args(argc, argv);
 	argc -= seen;
 	argv += seen;
+
+	init();
 
 	label_map_initializing = 1;
 	init_label_map();
@@ -273,6 +344,7 @@ int main(int argc, char **argv)
 	}else{
 		process_stream(stdin);
 	}
+	save_maps();
 
 	return 0;
 }

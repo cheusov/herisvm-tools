@@ -45,6 +45,28 @@ test: all
 	    2> ${output} >/dev/null || true; \
 	diff -u expect4.out ${output}; \
 	echo '      succeeded'; \
+	echo 'Test C #5.1'; \
+	env \
+	    classias2svmlight -F ${output}.fmap -L ${output}.lmap ${ds}/dataset.classias \
+	    > ${output}; \
+	diff -u expect5.out ${output}; \
+	diff -u fmap_expect1.out ${output}.fmap; \
+	diff -u lmap_expect1.out ${output}.lmap; \
+	rm ${output}.lmap ${output}.fmap; \
+	echo '      succeeded'; \
+	\
+	echo 'Test C #5.2'; \
+	env \
+	    classias2svmlight -l1 ${ds}/dataset.classias | awk '{$$1 = $$1 - 1; print}' \
+	    > ${output}; \
+	diff -u expect5.out ${output}; \
+	echo '      succeeded'; \
+	\
+	echo 'Test C #5.3'; \
+	env \
+	    classias2svmlight -h 2>&1 > /dev/null | awk '{print $$1; exit}' > ${output}; \
+	diff -u expect6.out ${output}; \
+	echo '      succeeded'; \
 	\
 	echo 'Test rb #1'; \
 	classias2svmlight.rb < ${ds}/small_train.classias \
@@ -84,6 +106,12 @@ test: all
 	    2> ${output} >/dev/null || true; \
 	diff -u expect4.out ${output}; \
 	echo '      succeeded'; \
+	echo 'Test rb #5.1'; \
+	env \
+	    classias2svmlight.rb ${ds}/dataset.classias \
+	    > ${output}; \
+	diff -u expect5.out ${output}; \
+	echo '      succeeded'
 
 
-CLEANFILES +=	${output}
+CLEANFILES +=	${output} ${output}.fmap ${output}.lmap class2id.txt token2id.txt

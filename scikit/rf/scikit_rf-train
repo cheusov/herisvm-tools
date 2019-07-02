@@ -117,7 +117,7 @@ for o,a in opts:
         usage()
         sys.exit()
     if o in ("--estimators", ):
-        kwargs_constructor['estimators'] = int(a)
+        kwargs_constructor['n_estimators'] = int(a)
     if o in ("--criterion", ):
         kwargs_constructor['criterion'] = a
     if o in ("--max_features", ):

@@ -1,0 +1,216 @@
+#!/usr/bin/env python3
+
+from collections import defaultdict
+import getopt
+import json
+import numpy as np
+import operator
+import re
+import sys
+
+def usage():
+    sys.stderr.write('''nbsvm_generate_svmlight converts input files to svmlight files.
+Svmlight content is output to stdout.
+Usage: generate_nbsvm [OPTIONS] <dataset>
+
+OPTIONS:
+   -h  --help           Display this screen.
+   -F <featuremap>      Set the filename where to store
+                        feature name to integer map.
+   -L <filename>        Set the filename where to store
+                        label to integer map.
+   -1|-2|-3             Enable unigrams, bigrams and treegrams.
+   -t                   Convert using existing -F and -L maps
+                        (used for converting testing set).
+''')
+
+opts,args = getopt.getopt(sys.argv[1:], '123F:hL:t', ['help'])
+
+grams = []
+testing_set = False
+
+for o,a in opts:
+    if o in ("-h", "--help", ):
+        usage()
+        sys.exit()
+    elif o in ("-F",):
+        feature_map = a
+    elif o in ("-L",):
+        label_map = a
+    elif o in ("-1",):
+        grams.append(1)
+    elif o in ("-2",):
+        grams.append(2)
+    elif o in ("-3",):
+        grams.append(3)
+    elif o in ("-t",):
+        testing_set = True
+
+def tokenize(sentence, grams):
+    words = sentence.split()
+    tokens = []
+    for gram in grams:
+        for i in range(len(words) - gram + 1):
+            tokens += ["_*_".join(words[i:i+gram])]
+    return tokens
+
+counters = defaultdict(lambda: defaultdict(lambda: 0))
+token2index = {}
+r = []
+
+def process_fd(label, fd):
+    global counters
+
+    for line in fd:
+        line = line.strip().lower()
+        line = re.sub("\s+", " ", line)
+        if line == "":
+            continue
+
+        tokens = tokenize(line, grams)
+        for token in tokens:
+            #print("token=" + token)
+            counters[label][token] += 1
+
+def process_file(label, filename):
+    with open(filename, "r") as fd:
+        process_fd(label, fd)
+
+def process_dataset_fd(fd):
+    for line in fd:
+        line = line.strip()
+
+        space_idx = line.find("\t")
+        if space_idx == -1:
+            raise Exception("Incorrect dataset line '%s'" %line)
+
+        label = line[:space_idx]
+        filename = line[space_idx+1:]
+
+        process_file(label, filename)
+
+def process_dataset_file(filename):
+    with open(filename, "r") as fd:
+        process_dataset_fd(fd)
+
+def compute_ratio(alpha=1):
+    global counters
+
+    alltokens = set(counters["1"].keys())
+    alltokens |= set(counters["-1"].keys())
+    token2index = dict((t, i) for i, t in enumerate(alltokens))
+    token_count = len(token2index)
+    p = np.ones(token_count) * alpha
+    q = np.ones(token_count) * alpha
+    for t in alltokens:
+        token_index = token2index[t]
+        p[token_index] += counters["1"][t]
+        q[token_index] += counters["-1"][t]
+    p /= p.sum()
+    q /= q.sum()
+    r = np.log(p/q)
+    return token2index, r
+
+def gen_libsvm_fd(fd, label, ofd):
+    for line in fd:
+        line = line.strip().lower()
+        line = re.sub("\s+", " ", line)
+        if line == "":
+            continue
+
+        tokens = tokenize(line, grams)
+        features = {}
+        for token in tokens:
+            token_index = token2index.get(token, -1)
+            if token_index < 0:
+                continue
+            features[token_index] = r[token_index]
+        features = list(features.items())
+        features.sort()
+        features_str = " ".join([str(x[0]+1) + ":" + str(x[1]) for x in features])
+        ofd.write(label + " " + features_str + "\n")
+
+label_id = 0
+label2id = {}
+
+def gen_libsvm_dataset_fd(fd, ofd):
+    global label_id
+
+    for line in fd:
+        line = line.strip()
+
+        space_idx = line.find("\t")
+        if space_idx == -1:
+            raise Exception("Incorrect dataset line '%s'" %line)
+
+        label = line[:space_idx]
+        filename = line[space_idx+1:]
+
+        if not label in label2id:
+            label2id[label] = label_id
+            label_id += 1
+
+        read_and_process(filename, gen_libsvm_fd, label=label, ofd=ofd)
+
+def read_and_process(filename, process_func, **kwargs):
+    with open(filename, "r") as ifd:
+        return process_func(ifd, **kwargs)
+
+def save_fmap():
+    if feature_map == None:
+        return
+    with open(feature_map, "w") as of:
+        tokens_array = list(token2index.items())
+        tokens_array.sort(key = operator.itemgetter(1))
+        for pair in tokens_array:
+            of.write(pair[0] + " " + str(r[pair[1]]) + "\n")
+
+def save_lmap():
+    if label_map == None:
+        return
+    with open(label_map, "w") as of:
+        for label,_id in label2id.items():
+            of.write(label + " " + str(_id) + "\n")
+
+def load_fmap():
+    global token2index
+    global r
+
+    if feature_map == None:
+        return
+
+    with open(feature_map, "r") as fd:
+        token2index = {}
+        r = []
+        for line in fd:
+            line = line.rstrip()
+            tokens = line.split(" ")
+            token2index[tokens[0]] = len(r)
+            r.append(float(tokens[1]))
+
+if testing_set:
+    load_fmap()
+    #print(token2index)
+    #print(r)
+    read_and_process(args[0], gen_libsvm_dataset_fd, ofd=sys.stdout)
+else:
+    process_dataset_file(args[0])
+    #print(counters)
+    token2index, r = compute_ratio()
+    #print(str(token2index))
+    read_and_process(args[0], gen_libsvm_dataset_fd, ofd=sys.stdout)
+    save_fmap()
+    save_lmap()
+
+#read_and_process(train_file, gen_libsvm_dataset_fd, ofd=sys.stdout)
+#train_file = "/home/cheusov/oss-prjs/nbsvm_run/data/train_files.txt"
+#test_file = "/home/cheusov/oss-prjs/nbsvm_run/data/test_files.txt"
+
+#process_dataset_file(train_file)
+#process_dataset_file(test_file)
+
+#with open("train2.libsvm", "w") as ofd:
+#    read_and_process(train_file, gen_libsvm_dataset_fd, ofd=ofd)
+#with open("test2.libsvm", "w") as ofd:
+#    read_and_process(test_file, gen_libsvm_dataset_fd, ofd=ofd)
+#read_and_process(test_file, gen_libsvm_dataset_fd, ofd=sys.stdout)

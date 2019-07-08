@@ -101,6 +101,6 @@ split_args "$@" | {
     mkfifo "$fifo2_name"
     awk '{tag=$1; $1 = ""; print tag, "|" $0}' "$training_set" > "$fifo2_name" &
 
-    eval "$VW $fifo2_name --quiet -f $model $args"
+    eval "$VW $fifo2_name --random_seed=100500 --quiet -f $model $args"
     wait
 }

@@ -22,12 +22,15 @@ OPTIONS:
    -1|-2|-3             Enable unigrams, bigrams and treegrams.
    -t                   Convert using existing -F and -L maps
                         (used for converting testing set).
+   -o <filename>        Save svmlight to the specified file.
 ''')
 
-opts,args = getopt.getopt(sys.argv[1:], '123F:hL:t', ['help'])
+opts,args = getopt.getopt(sys.argv[1:], '123F:hL:o:t', ['help'])
 
 grams = []
 testing_set = False
+output_file = None
+label_map = None
 
 for o,a in opts:
     if o in ("-h", "--help", ):
@@ -45,6 +48,8 @@ for o,a in opts:
         grams.append(3)
     elif o in ("-t",):
         testing_set = True
+    elif o in ("-o",):
+        output_file = a
 
 def tokenize(sentence, grams):
     words = sentence.split()
@@ -84,7 +89,10 @@ def process_dataset_fd(fd):
         if space_idx == -1:
             raise Exception("Incorrect dataset line '%s'" %line)
 
-        label = line[:space_idx]
+        label = int(line[:space_idx])
+        if label < 0:
+            label = 0
+
         filename = line[space_idx+1:]
 
         process_file(label, filename)
@@ -96,16 +104,16 @@ def process_dataset_file(filename):
 def compute_ratio(alpha=1):
     global counters
 
-    alltokens = set(counters["1"].keys())
-    alltokens |= set(counters["-1"].keys())
+    alltokens = set(counters[1].keys())
+    alltokens |= set(counters[0].keys())
     token2index = dict((t, i) for i, t in enumerate(alltokens))
     token_count = len(token2index)
     p = np.ones(token_count) * alpha
     q = np.ones(token_count) * alpha
     for t in alltokens:
         token_index = token2index[t]
-        p[token_index] += counters["1"][t]
-        q[token_index] += counters["-1"][t]
+        p[token_index] += counters[1][t]
+        q[token_index] += counters[0][t]
     p /= p.sum()
     q /= q.sum()
     r = np.log(p/q)
@@ -130,7 +138,6 @@ def gen_libsvm_fd(fd, label, ofd):
         features_str = " ".join([str(x[0]+1) + ":" + str(x[1]) for x in features])
         ofd.write(label + " " + features_str + "\n")
 
-label_id = 0
 label2id = {}
 
 def gen_libsvm_dataset_fd(fd, ofd):
@@ -147,8 +154,10 @@ def gen_libsvm_dataset_fd(fd, ofd):
         filename = line[space_idx+1:]
 
         if not label in label2id:
-            label2id[label] = label_id
-            label_id += 1
+            if label_map == None:
+                label2id[label] = int(label)
+            else:
+                label2id[label] = len(label2id)
 
         read_and_process(filename, gen_libsvm_fd, label=label, ofd=ofd)
 
@@ -190,27 +199,20 @@ def load_fmap():
 
 if testing_set:
     load_fmap()
-    #print(token2index)
-    #print(r)
-    read_and_process(args[0], gen_libsvm_dataset_fd, ofd=sys.stdout)
+    if output_file == None:
+        read_and_process(args[0], gen_libsvm_dataset_fd, ofd=sys.stdout)
+    else:
+        with open(output_file, "w") as ofd:
+            read_and_process(args[0], gen_libsvm_dataset_fd, ofd=ofd)
 else:
     process_dataset_file(args[0])
-    #print(counters)
+    sys.stderr.write(str(len(counters[1])) + "\n")
+    sys.stderr.write(str(len(counters[0])) + "\n")
     token2index, r = compute_ratio()
-    #print(str(token2index))
-    read_and_process(args[0], gen_libsvm_dataset_fd, ofd=sys.stdout)
+    if output_file == None:
+        read_and_process(args[0], gen_libsvm_dataset_fd, ofd=sys.stdout)
+    else:
+        with open(output_file, "w") as ofd:
+            read_and_process(args[0], gen_libsvm_dataset_fd, ofd=ofd)
     save_fmap()
     save_lmap()
-
-#read_and_process(train_file, gen_libsvm_dataset_fd, ofd=sys.stdout)
-#train_file = "/home/cheusov/oss-prjs/nbsvm_run/data/train_files.txt"
-#test_file = "/home/cheusov/oss-prjs/nbsvm_run/data/test_files.txt"
-
-#process_dataset_file(train_file)
-#process_dataset_file(test_file)
-
-#with open("train2.libsvm", "w") as ofd:
-#    read_and_process(train_file, gen_libsvm_dataset_fd, ofd=ofd)
-#with open("test2.libsvm", "w") as ofd:
-#    read_and_process(test_file, gen_libsvm_dataset_fd, ofd=ofd)
-#read_and_process(test_file, gen_libsvm_dataset_fd, ofd=sys.stdout)

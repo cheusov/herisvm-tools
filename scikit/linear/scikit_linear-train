@@ -28,6 +28,7 @@ import sys
 
 from sklearn.exceptions import ConvergenceWarning
 from sklearn import svm
+from sklearn.linear_model import LogisticRegression
 from svmlight_loader import load_svmlight_file
 
 def usage():
@@ -40,6 +41,8 @@ OPTIONS:
    detailed information see scikit learn documentation.
 
    -h   --help                     Display this screen.
+    -a  --algorithm <algorithm>    lr (LogisticRegression) or svc (LinearSVC),
+                                   the default is "svc".
         --penalty <penalty>        Penalty, for example, 'l1' or 'l2'.
         --loss <loss>              Loss function, for example, 'hinge' or
                                    'squared_hinge'.
@@ -57,6 +60,7 @@ OPTIONS:
         --random_state <seed>      Initial random seed.
         --max_iter <value>         The maximum number of iterations to be run.
         --extra <name=value>       Extra parameter to classifier constructor.
+
 ''')
 
 def string_to_value(s):
@@ -78,17 +82,35 @@ def str2bool(v):
 kwargs_constructor = {}
 kwargs_fit = {}
 
-opts,args = getopt.getopt(sys.argv[1:], 'hc:',
+opts,args = getopt.getopt(sys.argv[1:], 'a:hc:',
                           ['help', 'penalty=', 'loss=', 'primary=', 'tol=',
                            'C=', 'multi_class=', 'fit_intercept=',
                            'intercept_scaling=', 'class_weight=', 'verbose=',
-                           'random_state=', 'max_iter=', "extra="]
-)
+                           'random_state=', 'max_iter=', "extra=",
+
+                           'solver=', 'warm_start=', 'n_jobs=', 'l1_ratio='
+
+                           'algorithm='
+                          ])
+
+algorithm = svm.LinearSVC
 
 for o,a in opts:
+    #
     if o in ("-h", "--help", ):
         usage()
         sys.exit()
+
+    #
+    if o in ("-a", "--algorithm"):
+        if a == "lr":
+            algorithm = LogisticRegression
+        elif a == "svc":
+            algorithm = svm.LinearSVC
+        else:
+            raise "Error"
+
+    # LinearSVC and LogisticRegression
     if o in ("--penalty", ):
         kwargs_constructor["penalty"] = a
     if o in ("--loss", ):
@@ -117,6 +139,17 @@ for o,a in opts:
         sep = a.find("=")
         kwargs_constructor[a[:sep]] = string_to_value(a[sep+1:])
 
+    # LogisticRegression
+    if o in ("--solver",):
+        kwargs_constructor["solver"] = a
+    if o in ("--warm_start",):
+        kwargs_constructor["warm_start"] = a
+    if o in ("--n_jobs",):
+        kwargs_constructor["n_jobs"] = a
+    if o in ("--l1_ratio",):
+        kwargs_constructor["l1_ratio"] = a
+
+
 X_train, y_train = load_svmlight_file(args[0])
 #feature_count = os.getenv("HERISVM_FC")
 #sys.stderr.write("feature_count=" + str(feature_count) + "\n")
@@ -126,7 +159,7 @@ X_train, y_train = load_svmlight_file(args[0])
 #else:
 #    feature_count = X_train.shape[1]
 
-clf = svm.LinearSVC(**kwargs_constructor)
+clf = algorithm(**kwargs_constructor)
 clf.fit(X_train, y_train, **kwargs_fit)
 
 with open(args[1], 'wb') as f:

@@ -97,6 +97,6 @@ split_args "$@" | {
 	training_set="$fifo_name"
     fi
 
-    eval "$CLASSIAS_TRAIN -m $model $training_set $args"
+    $CLASSIAS_TRAIN -m "$model" "$training_set" $args
     wait
 }
